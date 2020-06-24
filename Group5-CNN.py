@@ -4,6 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as f
+import tprch.optim as op
 
 # import for graphing and matrix operations
 import matplotlib.pyplot as plt
@@ -15,12 +16,18 @@ if(torch.cuda.is_available()):
 else:
   dev = torch.device("cpu")
 
-transform = transforms.Compose(torchvision.transforms.ToTensor())
-
+print(dev)
+  
 # probably has to change
 dataPath = '/baseline methods/Self-Trans/LUNA/train'
 
 lRate = 0.001
+
+# data transformations
+transform = transforms.Compose(torchvision.transforms.ToTensor())
+trainset = 
+testset = 
+classes = ('COVID', 'Non-COVID')
 
 # model
 class CNN(nn.Module):
@@ -30,7 +37,7 @@ class CNN(nn.Module):
     
     # Convolution operations
     self.conv1 = nn.Conv2d(1, 224, 5)
-    self.pool = nn.MaxPool2d(3,3)
+    self.pool = nn.MaxPool2d(2,2)
     self.conv2 = nn.Conv2d(224,224,3)
     
     # ANN operations
@@ -43,7 +50,11 @@ class CNN(nn.Module):
   def forward(self, run):
     run = self.pool(f.relu(self.conv1(run)))
     run = self.pool(f.relu(self.conv2(run)))
+    
+    # make tensor
     run = run.view(-1, 224*224*3)
+    
+    # run through ANN
     run = f.relu(self.fc1(run))
     run = f.relu(self.fc2(run))
     run = self.fc3(run)
@@ -52,3 +63,11 @@ class CNN(nn.Module):
 CNN1 = CNN()
 print("Model created!")
 
+
+#optimizer
+crit = nn.CrossEntropyLoss()
+optimizer = op.SGD(CNN1.parameters(), lr = lRate, momentum = 0.9)
+
+# train
+def train():
+  for epooch in range(2):
