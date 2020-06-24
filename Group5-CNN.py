@@ -21,7 +21,9 @@ print(dev)
 # probably has to change
 dataPath = '/baseline methods/Self-Trans/LUNA/train'
 
+# modify
 lRate = 0.001
+epochs = 
 
 # data transformations
 transform = transforms.Compose(torchvision.transforms.ToTensor())
@@ -70,4 +72,9 @@ optimizer = op.SGD(CNN1.parameters(), lr = lRate, momentum = 0.9)
 
 # train
 def train():
-  for epooch in range(2):
+  for epoch in range(2):
+
+train()
+
+print("Training complete!")
+print("Model saved!")
