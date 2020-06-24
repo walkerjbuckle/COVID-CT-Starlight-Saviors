@@ -4,7 +4,8 @@ import torchvision as vision
 
 # Load saved model and run with test images
 exec = CNN()
-exec.load_state_dict(torch.load('model.pth'))
+exec.load_state_dict(torch.load('model.pt'))
+exec.eval()
 
 # run to test images
 while true:
