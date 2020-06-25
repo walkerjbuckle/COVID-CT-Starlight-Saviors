@@ -23,7 +23,7 @@ transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize
 train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
 trainLoader = DL.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
 
-testSet = None
+testSet = torchvision.datasets.ImageFolder(root = '', transform = transform1)
 testLoader = DL.DataLoader(dataset=testSet, batch_size=batchSize, shuffle=False)
 classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
@@ -43,8 +43,6 @@ class CNN(nn.Module):
         self.fc1 = nn.Linear(224 * 224 * 3, 120)  # how did you find the size of the images afterwards to be 224x224?   <- that's what the original one seems to use
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 2)
-
-        
 
     # ID sequence:
     # conv1 -> pool -> conv2 -> pool -> fc1 -> fc2 -> fc3
@@ -74,7 +72,7 @@ def CNNBackup(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2, 2))
         self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(256 * 128 * 64, 1000)  # how do we find the size of the images afterwards (ex. 256x128)?
+        self.fc1 = nn.Linear(256 * 128 * 64, 1000)  # how do we find the size of the images afterwards (ex. 256x128)?  <-
         self.fc2 = nn.Linear(1000, 2)
     
     def forward(self, x):
