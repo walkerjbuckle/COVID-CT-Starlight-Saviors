@@ -3,7 +3,7 @@
 # import torch libraries
 import torch
 import torchvision
-from torch.utils.data import DataLoader
+from torch.utils.data import DL
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as f
@@ -13,14 +13,6 @@ import torch.optim as op
 import matplotlib.pyplot as plt
 import numpy as np
 
-# use gpu if available
-if torch.cuda.is_available():  # where is dev used?
-    dev = torch.device("cuda:0")
-else:
-    dev = torch.device("cpu")
-
-print(dev)
-
 # modify
 lRate = 0.001
 epochs = 5
@@ -29,10 +21,10 @@ batchSize = 100
 # probably has to change
 transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
 train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
-trainLoader = DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
+trainLoader = DL.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
 
 testSet = None
-testLoader = DataLoader(dataset=testSet, batch_size=batchSize, shuffle=False)
+testLoader = DL.DataLoader(dataset=testSet, batch_size=batchSize, shuffle=False)
 classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
 
@@ -52,19 +44,7 @@ class CNN(nn.Module):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 2)
 
-        ''' ALTERNATE METHOD
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, 3),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, 3),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2))
-        self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(256 * 128 * 64, 1000)  # how do we find the size of the images afterwards (ex. 256x128)?
-        self.fc2 = nn.Linear(1000, 2)
-        '''
+        
 
     # ID sequence:
     # conv1 -> pool -> conv2 -> pool -> fc1 -> fc2 -> fc3
@@ -81,7 +61,22 @@ class CNN(nn.Module):
         run = self.fc3(run)
         return run
 
-    ''' ALTERNATE METHOD
+# backup to try    
+def CNNBackup(nn.Module):
+    def __init__(self):
+        super(CNNBackup, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 32, 3),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, 3),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2))
+        self.drop_out = nn.Dropout()
+        self.fc1 = nn.Linear(256 * 128 * 64, 1000)  # how do we find the size of the images afterwards (ex. 256x128)?
+        self.fc2 = nn.Linear(1000, 2)
+    
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -90,9 +85,7 @@ class CNN(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         return out
-    '''
-
-
+        
 CNN1 = CNN()
 print("Model created!")
 
@@ -131,10 +124,35 @@ def train():
                       .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
                               (correct / total) * 100))
 
+# backup to try
+def backupTrain():
+    for epoch in range(epochs):
+        # add up losses to get average
+        rloss = 0.0
+        for i, data in enumerate(trainloader, 0):
+          inputs, labels = data
+          optimizer.zero_grad()
+          outputs = CNN1(inputs)
+          loss = crit(outputs, labels)
+          loss.backward()
+          optimizer.step()
 
-# def backupTrain():
+          # print loss for every 200 imgs
+          # collection and avg calculation
+          rloss = rloss + loss.item()
+          if i % batchSize == 0:
+            print('[%d, %5d] current loss: %.3f' % (epoch + 1, i + 1, rloss / batchSize))
+            rloss = 0.0
 
-                
+# use gpu if available
+if torch.cuda.is_available():
+    dev = torch.device("cuda:0")
+    CNN1.to(dev)
+else:
+    dev = torch.device("cpu")
+
+print(dev)
+          
 train()
 print("Training complete!")
 
