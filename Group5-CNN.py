@@ -26,7 +26,7 @@ lRate = 0.001
 epochs = 5
 batchSize = 100
 
-# probably has to change
+# probably has to changew
 transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
 train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
 trainloader = DataLoader.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
