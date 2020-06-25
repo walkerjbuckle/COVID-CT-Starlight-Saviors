@@ -21,17 +21,16 @@ else:
 
 print(dev)
 
-# probably has to change
-dataPath = '/baseline methods/Self-Trans/LUNA/train'  # what is this for?
-
 # modify
 lRate = 0.001
 epochs = 5
 batchSize = 100
 
-# data transformations
-transform = transforms.Compose(transforms.ToTensor())  # do we need to normalize the dataset?
-trainSet = None  # we should ask about how to define these two data sets
+# probably has to change
+transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
+train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
+trainloader = DataLoader.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
+
 testSet = None
 classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
@@ -46,12 +45,12 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
 
         # Convolution operations
-        self.conv1 = nn.Conv2d(1, 224, 5)  # any reason for 224 output channels and kernel size of 5?
+        self.conv1 = nn.Conv2d(1, 224, 5)  # any reason for 224 output channels and kernel size of 5?  <- no
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(224, 224, 3)
 
         # ANN operations
-        self.fc1 = nn.Linear(224 * 224 * 3, 120)  # how did you find the size of the images afterwards to be 224x224?
+        self.fc1 = nn.Linear(224 * 224 * 3, 120)  # how did you find the size of the images afterwards to be 224x224?   <- that's what the original one seems to use
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 2)
 
@@ -135,7 +134,12 @@ def train():
                               (correct / total) * 100))
 
 
+def backupTrain():
+    
+                
 train()
-
 print("Training complete!")
+
+# saves cnn to model.pt for use
+torch.save(CNN1.state_dict(), 'model.pt')
 print("Model saved!")
