@@ -3,7 +3,7 @@
 # import torch libraries
 import torch
 import torchvision
-from torch.utils.data import DL
+from torch.utils.data import DataLoader as DL
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as f
