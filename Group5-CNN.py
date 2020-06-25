@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # use gpu if available
-if torch.cuda.is_available():
+if torch.cuda.is_available():  # where is dev used?
     dev = torch.device("cuda:0")
 else:
     dev = torch.device("cpu")
@@ -26,16 +26,14 @@ lRate = 0.001
 epochs = 5
 batchSize = 100
 
-# probably has to changew
+# probably has to change
 transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
 train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
-trainloader = DataLoader.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
+trainLoader = DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
 
 testSet = None
-classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
-
-trainLoader = DataLoader(dataset=trainSet, batch_size=batchSize, shuffle=True)
 testLoader = DataLoader(dataset=testSet, batch_size=batchSize, shuffle=False)
+classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
 
 # model
@@ -134,8 +132,8 @@ def train():
                               (correct / total) * 100))
 
 
-def backupTrain():
-    
+# def backupTrain():
+
                 
 train()
 print("Training complete!")
