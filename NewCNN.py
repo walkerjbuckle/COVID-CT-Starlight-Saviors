@@ -26,7 +26,7 @@ train_data = torchvision.datasets.ImageFolder(root = trainDIR, transform = trans
 trainLoader = DL.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
 
 testSet = torchvision.datasets.ImageFolder(root = '', transform = transform1)
-testLoader = DL.DataLoader(dataset=testSet, batch_size=batchSize, shuffle=False)
+testLoader = DL.DataLoader(dataset = testSet, batch_size = batchSize, shuffle = False)
 classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
 
@@ -61,8 +61,9 @@ class CNN(nn.Module):
         run = self.fc3(run)
         return run
 
-# backup to try    
-def CNNBackup(nn.Module):
+
+# backup to try
+class CNNBackup(nn.Module):
     def __init__(self):
         super(CNNBackup, self).__init__()
         self.layer1 = nn.Sequential(
@@ -76,7 +77,7 @@ def CNNBackup(nn.Module):
         self.drop_out = nn.Dropout()
         self.fc1 = nn.Linear(256 * 128 * 64, 1000)  # how do we find the size of the images afterwards (ex. 256x128)?  <-
         self.fc2 = nn.Linear(1000, 2)
-    
+
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -85,7 +86,8 @@ def CNNBackup(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         return out
-        
+
+
 CNN1 = CNN()
 print("Model created!")
 
@@ -124,25 +126,27 @@ def train():
                       .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
                               (correct / total) * 100))
 
+
 # backup to try
 def backupTrain():
     for epoch in range(epochs):
         # add up losses to get average
         rloss = 0.0
-        for i, data in enumerate(trainloader, 0):
-          inputs, labels = data
-          optimizer.zero_grad()
-          outputs = CNN1(inputs)
-          loss = crit(outputs, labels)
-          loss.backward()
-          optimizer.step()
+        for i, data in enumerate(trainLoader, 0):
+            inputs, labels = data
+            optimizer.zero_grad()
+            outputs = CNN1(inputs)
+            loss = crit(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-          # print loss for every 200 imgs
-          # collection and avg calculation
-          rloss = rloss + loss.item()
-          if i % batchSize == 0:
-            print('[%d, %5d] current loss: %.3f' % (epoch + 1, i + 1, rloss / batchSize))
-            rloss = 0.0
+            # print loss for every 200 imgs
+            # collection and avg calculation
+            rloss = rloss + loss.item()
+            if i % batchSize == 0:
+                print('[%d, %5d] current loss: %.3f' % (epoch + 1, i + 1, rloss / batchSize))
+                rloss = 0.0
+
 
 # use gpu if available
 if torch.cuda.is_available():
@@ -152,7 +156,7 @@ else:
     dev = torch.device("cpu")
 
 print(dev)
-          
+
 train()
 print("Training complete!")
 
