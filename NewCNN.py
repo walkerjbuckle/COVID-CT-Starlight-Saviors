@@ -3,7 +3,7 @@
 # import torch libraries
 import torch
 import torchvision
-from torch.utils.data import DataLoader as DL
+from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as f
@@ -21,12 +21,11 @@ batchSize = 100
 trainDIR = '/Data-split'
 
 # probably has to change
-transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
+transform1 = transforms.Compose(transforms.ToTensor())  # do we need to normalize the dataset? <- yes
 train_data = torchvision.datasets.ImageFolder(root = trainDIR, transform = transform1)
-trainLoader = DL.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
-
+trainLoader = DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)  # there is no DataLoader module within the DataLoader library, so please stop adding it
 testSet = torchvision.datasets.ImageFolder(root = '', transform = transform1)
-testLoader = DL.DataLoader(dataset = testSet, batch_size = batchSize, shuffle = False)
+testLoader = DataLoader(dataset = testSet, batch_size = batchSize, shuffle = False)
 classes = ('COVID', 'Non-COVID')  # how do we link these classes to the images?
 
 
