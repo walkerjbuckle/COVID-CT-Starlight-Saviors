@@ -18,12 +18,11 @@ lRate = 0.001
 epochs = 5
 batchSize = 100
 
-
-trainDIR = 
+trainDIR = '/Data-split'
 
 # probably has to change
 transform1 = transforms.Compose(transforms.ToTensor()) # do we need to normalize the dataset? <- yes
-train_data = torchvision.datasets.ImageFolder(root = '/baseline methods/Self-Trans/LUNA/train', transform = transform1)
+train_data = torchvision.datasets.ImageFolder(root = trainDIR, transform = transform1)
 trainLoader = DL.DataLoader(train_data, batch_size = batchSize, num_workers = 0, shuffle = True)
 
 testSet = torchvision.datasets.ImageFolder(root = '', transform = transform1)
