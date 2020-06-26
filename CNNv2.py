@@ -2,7 +2,7 @@
 
 import torch
 import torchvision
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as f
@@ -10,8 +10,10 @@ import torch.optim as op
 import os
 from sklearn.model_selection import train_test_split
 from PIL import Image
+from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 trainDIR = 'dataset/'
 batchSize = 1
@@ -28,7 +30,26 @@ for root, directories, files in os.walk(trainDIR):
         label.append(int(root.split("/")[-1]))
 
 imgTrain, imgTest, labelTrain, labelTest = train_test_split(imgName, label, test_size=0.3, random_state=50,
-                                                            stratify=label)
+                                                          stratify=label)
+class data(Dataset):
+    # construct dataset
+    def __init__(self, csvFile, root, transform = aug):
+        self.root = root
+        self.transform = transform
+        self.CT = pd.read_csv(csvFile)
+    
+    # dataset length
+    def __len__(self):
+        return len(self.CT)
+    
+    # indexing
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        
+        # image
+        img_Name = os.path.join(self.root_dir, self.CT.iloc[idx,0])
+        img = io.imread(img_Name)
 
 trainAug = torchvision.transforms.Compose(
     [torchvision.transforms.Resize((224, 224)), torchvision.transforms.RandomRotation((-20, 20)),
