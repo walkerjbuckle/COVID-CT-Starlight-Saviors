@@ -191,7 +191,7 @@ else:
 
 print(dev)
 
-train()
+backupTrain()
 print("Training complete!")
 
 # saves cnn to model.pt for use
