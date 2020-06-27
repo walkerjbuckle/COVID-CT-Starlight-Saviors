@@ -22,7 +22,7 @@ class data(Dataset):
             idx = idx.tolist()
         
         # image
-        img_Name = os.path.join(self.root_dir, self.CT.iloc[idx,0])
+	img_Name = os.path.join(self.root_dir, self.CT.iloc[idx,0])
         img = io.imread(img_Name)
     	cS = self.CT.iloc[idx,3]
     	sample = {'image': img, 'COVID Status': cS}
