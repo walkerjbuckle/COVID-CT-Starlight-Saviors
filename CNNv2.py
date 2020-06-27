@@ -14,42 +14,21 @@ from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from dataLoader import data
 
 trainDIR = 'dataset/'
 batchSize = 1
 lRate = 0.001
 epochs = 1
 
-# Dataset creation
-imgName = []
-label = []
+# commented out for now
+#for root, directories, files in os.walk(trainDIR):
+#    for file in files:
+#        imgName.append(root + "/" + file)
+#        label.append(int(root.split("/")[-1]))
 
-for root, directories, files in os.walk(trainDIR):
-    for file in files:
-        imgName.append(root + "/" + file)
-        label.append(int(root.split("/")[-1]))
-
-imgTrain, imgTest, labelTrain, labelTest = train_test_split(imgName, label, test_size=0.3, random_state=50,
-                                                          stratify=label)
-class data(Dataset):
-    # construct dataset
-    def __init__(self, csvFile, root, transform = aug):
-        self.root = root
-        self.transform = transform
-        self.CT = pd.read_csv(csvFile)
-    
-    # dataset length
-    def __len__(self):
-        return len(self.CT)
-    
-    # indexing
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        
-        # image
-        img_Name = os.path.join(self.root_dir, self.CT.iloc[idx,0])
-        img = io.imread(img_Name)
+#imgTrain, imgTest, labelTrain, labelTest = train_test_split(imgName, label, test_size=0.3, random_state=50,
+#                                                          stratify=label)
 
 trainAug = torchvision.transforms.Compose(
     [torchvision.transforms.Resize((224, 224)), torchvision.transforms.RandomRotation((-20, 20)),
@@ -76,12 +55,11 @@ class CustomDatasetFromImages(torch.utils.data.Dataset):
     def __len__(self):
         return self.data_len
 
+#testData = CustomDatasetFromImages(imgTest, labelTest, transforms=testAug)
+#testLoader = torch.utils.data.DataLoader(testData, batch_size=batchSize, shuffle=False)
 
-trainData = CustomDatasetFromImages(imgTrain, labelTrain, transforms=trainAug)
-testData = CustomDatasetFromImages(imgTest, labelTest, transforms=testAug)
+trainData = data('data.csv', 'dataset2', transform=trainAug)
 trainLoader = torch.utils.data.DataLoader(trainData, batch_size=batchSize, shuffle=True)
-testLoader = torch.utils.data.DataLoader(testData, batch_size=batchSize, shuffle=False)
-
 
 # model
 class CNN(nn.Module):
@@ -184,18 +162,18 @@ def backupTrain():
     for epoch in range(epochs):
         # add up losses to get average
         rloss = 0.0
-        for i, data in enumerate(trainLoader, 0):
-            images, tensors, labels = data
+        total = 0
+        for i, (image, label) in enumerate(trainLoader):
             optimizer.zero_grad()
-            outputs = CNN1(tensors)  # use either CCN1 or CNN2
-            loss = criterion(outputs, labels)
+            outputs = CNN1(image)  # use either CCN1 or CNN2
+            loss = criterion(outputs, label)
             loss.backward()
             optimizer.step()
 
             # Track the accuracy
-            total = labels.size(0)
+            total = total + 1
             _, predicted = torch.max(outputs.data, 1)
-            correct = (predicted == labels).sum().item()
+            correct = (predicted == label).sum().item()
             accList.append(correct / total)
 
             if (i + 1) % batchSize == 0:
