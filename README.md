@@ -1,3 +1,9 @@
-This repository is a fork of a ML model for determining if a patient has COVID-19 based on a CT scan. Our goal is to improve the quality of the model.
+#What is this?
 
-This project is being done by Interns as part of the MISI Internship program. (https://www.misiacademy.tech/)
+This repository is a fork of [a machine learning(ML) model made by UCSD](https://github.com/UCSD-AI4H/COVID-CT).
+**Our goal is to create a reliable ML model that can determine if a patient has COVID-19 based on computed tomography(CT) scans from a sample of patients that have tested positive and patients that have tested negative.**
+
+#Who are we?
+This project is being done by Interns as part of the [MISI Internship program](https://www.misiacademy.tech/)
+
+
