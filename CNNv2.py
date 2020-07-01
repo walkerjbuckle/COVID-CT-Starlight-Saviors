@@ -18,10 +18,13 @@ from dataLoader import data
 
 trainDIR = 'dataset/'
 batchSize = 1
-lRate = 0.001
-epochs = 1
+lRate = 0.00000001
+epochs = 7
 
-# commented out for now
+# Dataset creation
+#imgName = []
+#label = []
+
 #for root, directories, files in os.walk(trainDIR):
 #    for file in files:
 #        imgName.append(root + "/" + file)
@@ -29,6 +32,7 @@ epochs = 1
 
 #imgTrain, imgTest, labelTrain, labelTest = train_test_split(imgName, label, test_size=0.3, random_state=50,
 #                                                          stratify=label)
+
 
 trainAug = torchvision.transforms.Compose(
     [torchvision.transforms.Resize((224, 224)), torchvision.transforms.RandomRotation((-20, 20)),
@@ -55,7 +59,10 @@ class CustomDatasetFromImages(torch.utils.data.Dataset):
     def __len__(self):
         return self.data_len
 
+
+#trainData = CustomDatasetFromImages(imgTrain, labelTrain, transforms=trainAug)
 #testData = CustomDatasetFromImages(imgTest, labelTest, transforms=testAug)
+
 #testLoader = torch.utils.data.DataLoader(testData, batch_size=batchSize, shuffle=False)
 
 trainData = data('data.csv', 'dataset2', transform=trainAug)
@@ -67,14 +74,14 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
 
         # Convolution operations - test other values for 32 and 64
-        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
+        self.conv1 = nn.Conv2d(1, 300, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 3)
+        self.conv2 = nn.Conv2d(300, 64, 3)
 
         # ANN operations - test other values for 1000 and 100
         self.fc1 = nn.Linear(55 * 55 * 64, 1000)  # 64 should match above's value (2nd arg in conv2)
-        self.fc2 = nn.Linear(1000, 100)
-        self.fc3 = nn.Linear(100, 2)
+        self.fc2 = nn.Linear(1000, 500)
+        self.fc3 = nn.Linear(500, 2)
 
     # ID sequence:
     # conv1 -> pool -> conv2 -> pool -> fc1 -> fc2 -> fc3
@@ -134,9 +141,9 @@ accList = []
 # not sure if this will work
 def train():
     for epoch in range(epochs):
-        for i, (images, tensors, labels) in enumerate(trainLoader):
+        for i, (idx, images, name, labels) in enumerate(trainLoader):
             # Run the forward pass
-            outputs = CNN1(tensors)  # use either CCN1 or CNN2
+            outputs = CNN1(images)  # use either CCN1 or CNN2
             loss = criterion(outputs, labels)
             lossList.append(loss.item())
 
@@ -163,17 +170,18 @@ def backupTrain():
         # add up losses to get average
         rloss = 0.0
         total = 0
-        for i, (image, label) in enumerate(trainLoader):
+        correct = 0
+        for i, (image, labels) in enumerate(trainLoader):
             optimizer.zero_grad()
             outputs = CNN1(image)  # use either CCN1 or CNN2
-            loss = criterion(outputs, label)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
 
             # Track the accuracy
             total = total + 1
             _, predicted = torch.max(outputs.data, 1)
-            correct = (predicted == label).sum().item()
+            correct = correct + (predicted == labels).sum().item()
             accList.append(correct / total)
 
             if (i + 1) % batchSize == 0:
