@@ -25,7 +25,7 @@ class data(Dataset):
 
 	# image
         img_Name = os.path.join(self.root, self.CT.iloc[idx,1])
-        img = Image.open(img_Name).convert('RGB')
+        img = Image.open(img_Name).convert('L')
         cS = self.CT.iloc[idx,3]
 
         if self.transform:
