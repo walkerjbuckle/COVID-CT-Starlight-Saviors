@@ -17,9 +17,9 @@ import pandas as pd
 from dataLoader import data
 
 trainDIR = 'dataset/'
-batchSize = 1
-lRate = 0.00000001
-epochs = 7
+batchSize = 16
+lRate = 0.001
+epochs = 500
 
 # Dataset creation
 #imgName = []
@@ -74,9 +74,9 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
 
         # Convolution operations - test other values for 32 and 64
-        self.conv1 = nn.Conv2d(1, 300, 3, padding=1)
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(300, 64, 3)
+        self.conv2 = nn.Conv2d(32, 64, 3)
 
         # ANN operations - test other values for 1000 and 100
         self.fc1 = nn.Linear(55 * 55 * 64, 1000)  # 64 should match above's value (2nd arg in conv2)
@@ -138,10 +138,11 @@ totalStep = len(trainLoader)
 lossList = []
 accList = []
 
-# not sure if this will work
+
 def train():
     for epoch in range(epochs):
-        for i, (idx, images, name, labels) in enumerate(trainLoader):
+        for i, (images, labels) in enumerate(trainLoader):
+            images, labels = images.to(dev), labels.to(dev)
             # Run the forward pass
             outputs = CNN1(images)  # use either CCN1 or CNN2
             loss = criterion(outputs, labels)
@@ -153,15 +154,15 @@ def train():
             optimizer.step()
 
             # Track the accuracy
-            total = labels.size(0)
+            stepTotal = labels.size(0)
             _, predicted = torch.max(outputs.data, 1)
-            correct = (predicted == labels).sum().item()
-            accList.append(correct / total)
+            stepCorrect = (predicted == labels).sum().item()
+            accList.append(stepCorrect / stepTotal)
 
             if (i + 1) % batchSize == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy this step: {:.2f}%'
                       .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
-                              (correct / total) * 100))
+                          (stepCorrect / stepTotal) * 100))
 
 
 # backup to try
@@ -172,6 +173,7 @@ def backupTrain():
         total = 0
         correct = 0
         for i, (image, labels) in enumerate(trainLoader):
+            image, labels = image.to(dev), labels.to(dev)
             optimizer.zero_grad()
             outputs = CNN1(image)  # use either CCN1 or CNN2
             loss = criterion(outputs, labels)
@@ -193,13 +195,14 @@ def backupTrain():
 # use gpu if available
 if torch.cuda.is_available():
     dev = torch.device("cuda:0")
-    CNN1.to(dev)  # use either CCN1 or CNN2, based on what you set in the training method being used
 else:
     dev = torch.device("cpu")
 
 print(dev)
 
-backupTrain()
+CNN1.to(dev)  # use either CCN1 or CNN2, based on what you set in the training method being used
+
+train()
 print("Training complete!")
 
 # saves cnn to model.pt for use
