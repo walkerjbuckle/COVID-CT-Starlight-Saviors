@@ -96,7 +96,7 @@ def test():
         #print(totalCorrect)
         #print("")
 
-    print('Accuracy: {:.2f}%'
+    print("Accuracy: {:.2f}%"
           .format((totalCorrect / totalTotal) * 100))
     print("correct: " + str(totalCorrect))
     print("total: " + str(totalTotal))
@@ -104,6 +104,10 @@ def test():
     print("true negatives: " + str(TN))
     print("false positives: " + str(FP))
     print("false negatives: " + str(FN))
+    print("false positive rate: {:.2f}%"
+          .format((FP / (FP + TN)) * 100))
+    print("false negative rate: {:.2f}%"
+          .format((FN / (FN + TP)) * 100))
 
 
 test()
