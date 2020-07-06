@@ -70,7 +70,7 @@ parser.add_argument('--data-split', default='../../Data-split', type=string,
                                 valCT_NonCOVID.txt""")
 
 
-
+args = parser.parse_args()
 batchsize = args.batch_size
 
 alpha = None
@@ -347,7 +347,7 @@ val_transformer = transforms.Compose([
 #                          txt_NonCOVID='../../Data-split/NonCOVID/testCT_NonCOVID.txt',
 #                          transform=val_transformer)
 
-args = parser.parse_args()
+
 
 train_root_path = args.train_root
 val_root_path = args.val_root
@@ -357,11 +357,11 @@ data_split_path = args.data_split
 
 
 trainset = CovidCTDataset(root_dir = train_root_path,
-                              txt_COVID = args.data_split_path + '/COVID/trainCT_COVID.txt',
-                              txt_NonCOVID = args.data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
+                              txt_COVID = data_split_path + '/COVID/trainCT_COVID.txt',
+                              txt_NonCOVID = data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
                               transform=train_transformer)
 valset = CovidCTDataset(root_dir=val_root_path,
-                        txt_COVID = data_split_path+ '/COVID/valCT_COVID.txt',
+                        txt_COVID = data_split_path + '/COVID/valCT_COVID.txt',
                         txt_NonCOVID = data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
                         transform=val_transformer)
 testset = CovidCTDataset(root_dir=test_root_path,
@@ -369,9 +369,9 @@ testset = CovidCTDataset(root_dir=test_root_path,
                          txt_NonCOVID = data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
                          transform=val_transformer)
 
-print(trainset.__len__())
-print(valset.__len__())
-print(testset.__len__())
+print("Training set length: %d" % trainset.__len__())
+print("Validation set length: %d" % valset.__len__())
+print("Testing set length: %d " %testset.__len__())
 
 train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
 val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
