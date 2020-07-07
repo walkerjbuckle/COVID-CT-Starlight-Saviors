@@ -14,12 +14,12 @@ from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from dataLoader import data
+from dataLoader import data, EngineeredData
 
 trainDIR = 'dataset/'
-batchSize = 16
+batchSize = 50
 lRate = 0.001
-epochs = 500
+epochs = 200
 
 # Dataset creation
 #imgName = []
@@ -139,9 +139,9 @@ lossList = []
 accList = []
 
 
-def train():
+def train(trainer):
     for epoch in range(epochs):
-        for i, (images, labels) in enumerate(trainLoader):
+        for i, (images, labels) in enumerate(trainer):
             images, labels = images.to(dev), labels.to(dev)
             # Run the forward pass
             outputs = CNN1(images)  # use either CCN1 or CNN2
@@ -202,7 +202,18 @@ print(dev)
 
 CNN1.to(dev)  # use either CCN1 or CNN2, based on what you set in the training method being used
 
-train()
+train(trainLoader)
+
+for i in enumerate(30):
+    trainer = EngineeredData('data.csv', 'dataset2', transform = trainAug, 2)
+    loader = torch.utils.data.DataLoader(trainer, batch_size=500, shuffle=True)
+    train(loader)
+
+trainer = EngineeredData('data.csv', 'dataset2', transform = trainAug, 1)
+loader = torch.utils.data.DataLoader(trainer, batch_size=500, shuffle=True)
+
+train(loader)
+    
 print("Training complete!")
 
 # saves cnn to model.pt for use
