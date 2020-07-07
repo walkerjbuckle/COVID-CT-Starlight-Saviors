@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 import os
+import sys
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
@@ -302,6 +303,22 @@ def test(epoch):
 # test process definition ends here #####################################################################################
 
 
+def save_trained_model(model):
+
+    path = os.path.join(os.getcwd(), args.save_dir)
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        print("Found save directory already present")
+    except:
+        sys.exit("Failed to create save directory")
+    else:
+        torch.save(model.state_dict(),
+                "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
+    return
+
+
+
 
 if __name__ == '__main__':
 
@@ -444,8 +461,11 @@ if __name__ == '__main__':
             print('AUC', AUC)
 
             #         if epoch == total_epoch:
-            torch.save(model.state_dict(),
-                       "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
+
+            save_trained_model(model)
+
+            # torch.save(model.state_dict(),
+            #            "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
 
             vote_pred = np.zeros(valset.__len__())
             vote_score = np.zeros(valset.__len__())
