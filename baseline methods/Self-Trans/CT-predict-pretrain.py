@@ -48,17 +48,17 @@ parser.add_argument('-b', '--batch-size', default=64, type=int,
 
 
 
-parser.add_argument('--train-root', default='../../Images-processed', type=str,
+parser.add_argument('--train-root', default='../../Images-processed',
                     help='root directory for training dataset')
 
-parser.add_argument('--val-root', default='../../Images-processed', type=str,
+parser.add_argument('--val-root', default='../../Images-processed',
                     help='root directory for validation dataset')
 
-parser.add_argument('--test-root', default='../../Images-processed', type=str,
+parser.add_argument('--test-root', default='../../Images-processed',
                     help='root directory for testing dataset')
 
-parser.add_argument('--data-split', default='../../Data-split', type=str,
-                    help="""directory for COVID/Non-COVID data. Requires the following structure:
+parser.add_argument('--data-split', default='../../Data-split',
+                    help="""directory for COVID/NonCOVID data. Requires the following structure:
                             Data-Split
                              - COVID
                                 testCT_COVID.txt
@@ -68,6 +68,11 @@ parser.add_argument('--data-split', default='../../Data-split', type=str,
                                 testCT_NonCOVID.txt
                                 trainCT_NonCOVID.txt
                                 valCT_NonCOVID.txt""")
+
+
+
+parser.add_argument('--save-dir', default='model_backup',
+                    help='Directory for storing saved model when finished. Must already exist.')
 
 
 args = parser.parse_args()
@@ -298,231 +303,210 @@ def test(epoch):
 
 
 
-# def main():
+if __name__ == '__main__':
+
+    ########## Mean and std are calculated from the train dataset
+    normalize = transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
+                                     std=[0.33165374, 0.33165374, 0.33165374])
+    train_transformer = transforms.Compose([
+        transforms.Resize(256),
+        transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        #     transforms.RandomRotation(90),
+        # random brightness and random contrast
+        transforms.ColorJitter(brightness=0.2, contrast=0.2),
+        transforms.ToTensor(),
+        normalize
+    ])
+
+    val_transformer = transforms.Compose([
+        #     transforms.Resize(224),
+        #     transforms.CenterCrop(224),
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        normalize
+    ])
+
+    val_transformer = transforms.Compose([
+        #     transforms.Resize(224),
+        #     transforms.CenterCrop(224),
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        normalize
+    ])
 
 
-########## Mean and std are calculated from the train dataset
-normalize = transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
-                                 std=[0.33165374, 0.33165374, 0.33165374])
-train_transformer = transforms.Compose([
-    transforms.Resize(256),
-    transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
-    transforms.RandomHorizontalFlip(),
-    #     transforms.RandomRotation(90),
-    # random brightness and random contrast
-    transforms.ColorJitter(brightness=0.2, contrast=0.2),
-    transforms.ToTensor(),
-    normalize
-])
+    train_root_path = args.train_root
+    val_root_path = args.val_root
+    test_root_path = args.test_root
 
-val_transformer = transforms.Compose([
-    #     transforms.Resize(224),
-    #     transforms.CenterCrop(224),
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    normalize
-])
-
-val_transformer = transforms.Compose([
-    #     transforms.Resize(224),
-    #     transforms.CenterCrop(224),
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    normalize
-])
+    data_split_path = args.data_split
 
 
+    trainset = CovidCTDataset(root_dir = train_root_path,
+                                  txt_COVID = data_split_path + '/COVID/trainCT_COVID.txt',
+                                  txt_NonCOVID = data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
+                                  transform=train_transformer)
+    valset = CovidCTDataset(root_dir=val_root_path,
+                            txt_COVID = data_split_path + '/COVID/valCT_COVID.txt',
+                            txt_NonCOVID = data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
+                            transform=val_transformer)
+    testset = CovidCTDataset(root_dir=test_root_path,
+                             txt_COVID = data_split_path + '/COVID/testCT_COVID.txt',
+                             txt_NonCOVID = data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
+                             transform=val_transformer)
 
-# if __name__ == '__main__':
-# trainset = CovidCTDataset(root_dir='../../Images-processed',
-#                           txt_COVID='../../Data-split/COVID/trainCT_COVID.txt',
-#                           txt_NonCOVID='../../Data-split/NonCOVID/trainCT_NonCOVID.txt',
-#                           transform=train_transformer)
-# valset = CovidCTDataset(root_dir='../../Images-processed',
-#                         txt_COVID='../../Data-split/COVID/valCT_COVID.txt',
-#                         txt_NonCOVID='../../Data-split/NonCOVID/valCT_NonCOVID.txt',
-#                         transform=val_transformer)
-# testset = CovidCTDataset(root_dir='../../Images-processed',
-#                          txt_COVID='../../Data-split/COVID/testCT_COVID.txt',
-#                          txt_NonCOVID='../../Data-split/NonCOVID/testCT_NonCOVID.txt',
-#                          transform=val_transformer)
+    print("Training set length: %d" % trainset.__len__())
+    print("Validation set length: %d" % valset.__len__())
+    print("Testing set length: %d " %testset.__len__())
 
-
-
-train_root_path = args.train_root
-val_root_path = args.val_root
-test_root_path = args.test_root
-
-data_split_path = args.data_split
-
-
-trainset = CovidCTDataset(root_dir = train_root_path,
-                              txt_COVID = data_split_path + '/COVID/trainCT_COVID.txt',
-                              txt_NonCOVID = data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
-                              transform=train_transformer)
-valset = CovidCTDataset(root_dir=val_root_path,
-                        txt_COVID = data_split_path + '/COVID/valCT_COVID.txt',
-                        txt_NonCOVID = data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
-                        transform=val_transformer)
-testset = CovidCTDataset(root_dir=test_root_path,
-                         txt_COVID = data_split_path + '/COVID/testCT_COVID.txt',
-                         txt_NonCOVID = data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
-                         transform=val_transformer)
-
-print("Training set length: %d" % trainset.__len__())
-print("Validation set length: %d" % valset.__len__())
-print("Testing set length: %d " %testset.__len__())
-
-train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
-val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
-test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
+    train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
+    val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
+    test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
 
 
 
-for batch_index, batch_samples in enumerate(train_loader):
-    data, target = batch_samples['img'], batch_samples['label']
-skimage.io.imshow(data[0, 1, :, :].numpy())
+    for batch_index, batch_samples in enumerate(train_loader):
+        data, target = batch_samples['img'], batch_samples['label']
+    skimage.io.imshow(data[0, 1, :, :].numpy())
 
-"""Load Self-Trans model"""
-"""Change names and locations to the Self-Trans.pt"""
-model = models.densenet169(pretrained=True).cuda()
-# pretrained_net = torch.load('model_backup/Dense169.pt')
-# pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
-pretrained_net = torch.load('Self-Trans.pt')
-model.load_state_dict(pretrained_net)
-modelname = 'Dense169_ssl_luna_moco'
+    """Load Self-Trans model"""
+    """Change names and locations to the Self-Trans.pt"""
+    model = models.densenet169(pretrained=True).cuda()
+    # pretrained_net = torch.load('model_backup/Dense169.pt')
+    # pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
+    pretrained_net = torch.load('Self-Trans.pt')
+    model.load_state_dict(pretrained_net)
+    modelname = 'Dense169_ssl_luna_moco'
 
-# train
-bs = batchsize
-votenum = 10
-import warnings
-warnings.filterwarnings('ignore')
+    # train
+    bs = batchsize
+    votenum = 10
+    import warnings
+    warnings.filterwarnings('ignore')
 
-r_list = []
-p_list = []
-acc_list = []
-AUC_list = []
-# TP = 0
-# TN = 0
-# FN = 0
-# FP = 0
-vote_pred = np.zeros(valset.__len__())
-vote_score = np.zeros(valset.__len__())
+    r_list = []
+    p_list = []
+    acc_list = []
+    AUC_list = []
+    # TP = 0
+    # TN = 0
+    # FN = 0
+    # FP = 0
+    vote_pred = np.zeros(valset.__len__())
+    vote_score = np.zeros(valset.__len__())
 
-# optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
-# scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.95)
+    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.95)
 
-scheduler = StepLR(optimizer, step_size=1)
+    scheduler = StepLR(optimizer, step_size=1)
 
-total_epoch = 20
-for epoch in range(1, total_epoch + 1):
-    train(optimizer, epoch)
+    total_epoch = 20
+    for epoch in range(1, total_epoch + 1):
+        train(optimizer, epoch)
 
-    targetlist, scorelist, predlist = val(epoch)
+        targetlist, scorelist, predlist = val(epoch)
+        print('target', targetlist)
+        print('score', scorelist)
+        print('predict', predlist)
+        vote_pred = vote_pred + predlist
+        vote_score = vote_score + scorelist
+
+        if epoch % votenum == 0:
+            # major vote
+            vote_pred[vote_pred <= (votenum / 2)] = 0
+            vote_pred[vote_pred > (votenum / 2)] = 1
+            vote_score = vote_score / votenum
+
+            print('vote_pred', vote_pred)
+            print('targetlist', targetlist)
+            TP = ((vote_pred == 1) & (targetlist == 1)).sum()
+            TN = ((vote_pred == 0) & (targetlist == 0)).sum()
+            FN = ((vote_pred == 0) & (targetlist == 1)).sum()
+            FP = ((vote_pred == 1) & (targetlist == 0)).sum()
+
+            print('TP=', TP, 'TN=', TN, 'FN=', FN, 'FP=', FP)
+            print('TP+FP', TP + FP)
+            p = TP / (TP + FP)
+            print('precision', p)
+            p = TP / (TP + FP)
+            r = TP / (TP + FN)
+            print('recall', r)
+            F1 = 2 * r * p / (r + p)
+            acc = (TP + TN) / (TP + TN + FP + FN)
+            print('F1', F1)
+            print('acc', acc)
+            AUC = roc_auc_score(targetlist, vote_score)
+            print('AUCp', roc_auc_score(targetlist, vote_pred))
+            print('AUC', AUC)
+
+            #         if epoch == total_epoch:
+            torch.save(model.state_dict(),
+                       "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
+
+            vote_pred = np.zeros(valset.__len__())
+            vote_score = np.zeros(valset.__len__())
+            print(
+                '\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
+                    epoch, r, p, F1, acc, AUC))
+
+    #         f = open('model_result/medical_transfer/{}_{}.txt'.format(modelname,alpha_name), 'a+')
+    #         f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
+    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
+    #         epoch, r, p, F1, acc, AUC))
+    #         f.close()
+
+    # test
+    bs = 10
+    import warnings
+    warnings.filterwarnings('ignore')
+
+    epoch = 1
+    r_list = []
+    p_list = []
+    acc_list = []
+    AUC_list = []
+    # TP = 0
+    # TN = 0
+    # FN = 0
+    # FP = 0
+    vote_pred = np.zeros(testset.__len__())
+    vote_score = np.zeros(testset.__len__())
+
+    targetlist, scorelist, predlist = test(epoch)
     print('target', targetlist)
     print('score', scorelist)
     print('predict', predlist)
     vote_pred = vote_pred + predlist
     vote_score = vote_score + scorelist
 
-    if epoch % votenum == 0:
-        # major vote
-        vote_pred[vote_pred <= (votenum / 2)] = 0
-        vote_pred[vote_pred > (votenum / 2)] = 1
-        vote_score = vote_score / votenum
+    TP = ((predlist == 1) & (targetlist == 1)).sum()
 
-        print('vote_pred', vote_pred)
-        print('targetlist', targetlist)
-        TP = ((vote_pred == 1) & (targetlist == 1)).sum()
-        TN = ((vote_pred == 0) & (targetlist == 0)).sum()
-        FN = ((vote_pred == 0) & (targetlist == 1)).sum()
-        FP = ((vote_pred == 1) & (targetlist == 0)).sum()
+    TN = ((predlist == 0) & (targetlist == 0)).sum()
+    FN = ((predlist == 0) & (targetlist == 1)).sum()
+    FP = ((predlist == 1) & (targetlist == 0)).sum()
 
-        print('TP=', TP, 'TN=', TN, 'FN=', FN, 'FP=', FP)
-        print('TP+FP', TP + FP)
-        p = TP / (TP + FP)
-        print('precision', p)
-        p = TP / (TP + FP)
-        r = TP / (TP + FN)
-        print('recall', r)
-        F1 = 2 * r * p / (r + p)
-        acc = (TP + TN) / (TP + TN + FP + FN)
-        print('F1', F1)
-        print('acc', acc)
-        AUC = roc_auc_score(targetlist, vote_score)
-        print('AUCp', roc_auc_score(targetlist, vote_pred))
-        print('AUC', AUC)
+    print('TP=', TP, 'TN=', TN, 'FN=', FN, 'FP=', FP)
+    print('TP+FP', TP + FP)
+    p = TP / (TP + FP)
+    print('precision', p)
+    p = TP / (TP + FP)
+    r = TP / (TP + FN)
+    print('recall', r)
+    F1 = 2 * r * p / (r + p)
+    acc = (TP + TN) / (TP + TN + FP + FN)
+    print('F1', F1)
+    print('acc', acc)
+    AUC = roc_auc_score(targetlist, vote_score)
+    print('AUC', AUC)
 
-        #         if epoch == total_epoch:
-        torch.save(model.state_dict(),
-                   "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname, alpha_name))
+    # f = open(f'model_result/medical_transfer/test_{modelname}_{alpha_name}_LUNA_moco_CT_moco.txt', 'a+')
+    # f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
+    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
+    # epoch, r, p, F1, acc, AUC))
+    # f.close()
+    # torch.save(model.state_dict(), "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname,alpha_name))
 
-        vote_pred = np.zeros(valset.__len__())
-        vote_score = np.zeros(valset.__len__())
-        print(
-            '\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-                epoch, r, p, F1, acc, AUC))
-
-#         f = open('model_result/medical_transfer/{}_{}.txt'.format(modelname,alpha_name), 'a+')
-#         f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
-# average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-#         epoch, r, p, F1, acc, AUC))
-#         f.close()
-
-# test
-bs = 10
-import warnings
-warnings.filterwarnings('ignore')
-
-epoch = 1
-r_list = []
-p_list = []
-acc_list = []
-AUC_list = []
-# TP = 0
-# TN = 0
-# FN = 0
-# FP = 0
-vote_pred = np.zeros(testset.__len__())
-vote_score = np.zeros(testset.__len__())
-
-targetlist, scorelist, predlist = test(epoch)
-print('target', targetlist)
-print('score', scorelist)
-print('predict', predlist)
-vote_pred = vote_pred + predlist
-vote_score = vote_score + scorelist
-
-TP = ((predlist == 1) & (targetlist == 1)).sum()
-
-TN = ((predlist == 0) & (targetlist == 0)).sum()
-FN = ((predlist == 0) & (targetlist == 1)).sum()
-FP = ((predlist == 1) & (targetlist == 0)).sum()
-
-print('TP=', TP, 'TN=', TN, 'FN=', FN, 'FP=', FP)
-print('TP+FP', TP + FP)
-p = TP / (TP + FP)
-print('precision', p)
-p = TP / (TP + FP)
-r = TP / (TP + FN)
-print('recall', r)
-F1 = 2 * r * p / (r + p)
-acc = (TP + TN) / (TP + TN + FP + FN)
-print('F1', F1)
-print('acc', acc)
-AUC = roc_auc_score(targetlist, vote_score)
-print('AUC', AUC)
-
-# f = open(f'model_result/medical_transfer/test_{modelname}_{alpha_name}_LUNA_moco_CT_moco.txt', 'a+')
-# f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
-# average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-# epoch, r, p, F1, acc, AUC))
-# f.close()
-# torch.save(model.state_dict(), "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname,alpha_name))
-
-
-# if __name__ == '__main__':
-#     main()
