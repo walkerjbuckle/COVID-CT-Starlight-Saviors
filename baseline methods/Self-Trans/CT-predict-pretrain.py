@@ -309,13 +309,16 @@ def save_trained_model(model):
     try:
         os.mkdir(path)
     except FileExistsError:
-        print("Found save directory already present")
+        print("Model saved in a preexisting directory: %s" % path)
+        torch.save(model.state_dict(),
+                   "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
     except:
         sys.exit("Failed to create save directory")
     else:
+        print("Model saved in new directory: %s" % path)
         torch.save(model.state_dict(),
                 "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
-    return
+
 
 
 
