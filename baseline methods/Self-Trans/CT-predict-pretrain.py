@@ -71,8 +71,8 @@ parser.add_argument('--data-split', default='../../Data-split',
 
 
 
-parser.add_argument('--save-dir', default='models_backup',
-                    help='root directory for testing dataset')
+parser.add_argument('--save-dir', default='model_backup',
+                    help='Directory for storing saved model when finished. Must already exist.')
 
 
 args = parser.parse_args()
