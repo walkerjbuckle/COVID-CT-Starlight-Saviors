@@ -55,13 +55,17 @@ class EngineeredData(Dataset):
         img_Name = os.path.join(self.root, self.CT.iloc[idx,1])
         img = Image.open(img_Name).convert('L')
         cS = self.CT.iloc[idx,3]
-	if op == 1:
-		img = np.flipud(img)
-	elif op == 2:
-		seed(1)
-		a = (random()) * 300
-		img = rotate(img, angle=a, mode = 'wrap')
-
+		if op == 1:
+			img = np.flipud(img)
+		elif op == 2:
+			seed(1)
+			a = (random()) * 300
+			img = rotate(img, angle=a, mode = 'wrap')
+		elif op == 3:
+			transform = AffineTransform(translation=(25,25))
+			newIMG = warp(img,transform,mode='wrap')
+			img = newIMG
+		
         if self.transform:
             img = self.transform(img)
 	
@@ -70,10 +74,6 @@ class EngineeredData(Dataset):
 #I'm trying to write a feature engineering/image augmentation script below
 
 #applying shift transformations
-transform = AffineTransform(translation=(25,25))
-wrapShift = warp(image,transform,mode='wrap')
-plt.imshow(wrapShift)
-plt.title('Wrap Shift')
 
 #adding noise
 sigma=0.155
