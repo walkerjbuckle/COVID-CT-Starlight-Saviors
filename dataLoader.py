@@ -61,29 +61,22 @@ class EngineeredData(Dataset):
 			seed(1)
 			a = (random()) * 300
 			img = rotate(img, angle=a, mode = 'wrap')
-		elif op == 3:
+		elif op == 3: #applying shift transformations
 			transform = AffineTransform(translation=(25,25))
 			newIMG = warp(img,transform,mode='wrap')
 			img = newIMG
+		elif op == 4: #adding noise
+			sigma=0.155
+			noisyRandom = random_noise(image,var=sigma**2)
+			plt.imshow(noisyRandom)
+			plt.title('Random Noise')
+		elif op == 5: #image blurring
+			blurred = gaussian(image,sigma=1,multichannel=True)
+			plt.imshow(blurred)
+			plt.title('Blurred Image')
+
 		
         if self.transform:
             img = self.transform(img)
 	
         return (img, cS)
-
-#I'm trying to write a feature engineering/image augmentation script below
-
-#applying shift transformations
-
-#adding noise
-sigma=0.155
-noisyRandom = random_noise(image,var=sigma**2)
-
-plt.imshow(noisyRandom)
-plt.title('Random Noise')
-
-#image blurring
-blurred = gaussian(image,sigma=1,multichannel=True)
-
-plt.imshow(blurred)
-plt.title('Blurred Image')
