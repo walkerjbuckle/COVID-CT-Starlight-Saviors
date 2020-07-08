@@ -307,7 +307,7 @@ def test(epoch):
 # test process definition ends here #####################################################################################
 
 
-def save_trained_model(model):
+def save_trained_model(model, modelname, alpha_name):
 
     path = os.path.join(os.getcwd(), args.save_dir)
     try:
@@ -467,7 +467,7 @@ if __name__ == '__main__':
 
             #         if epoch == total_epoch:
 
-            save_trained_model(model)
+            save_trained_model(model, modelname, alpha_name)
 
             # torch.save(model.state_dict(),
             #            "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
