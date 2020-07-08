@@ -76,6 +76,12 @@ parser.add_argument('--save-dir', default='model_backup',
                     help='Directory for storing saved model when finished. Must already exist.')
 
 
+parser.add_argument('--model', default='Self-Trans.pt',
+                    help='File path for model to be tested')
+
+parser.add_argument('--epoch', default=20, type=int,
+                    help='Number of epochs to run for testing.')
+
 args = parser.parse_args()
 batchsize = args.batch_size
 
@@ -136,8 +142,6 @@ class CovidCTDataset(Dataset):
         return sample
 
 # training process is defined here #####################################################################################
-
-
 def train(optimizer, epoch):
     model.train()
 
@@ -309,18 +313,15 @@ def save_trained_model(model):
     try:
         os.mkdir(path)
     except FileExistsError:
-        print("Model saved in a preexisting directory: %s" % path)
+        print("\nModel saved in a preexisting directory: %s" % path)
         torch.save(model.state_dict(),
                    "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
     except:
-        sys.exit("Failed to create save directory")
+        sys.exit("\nFailed to create save directory")
     else:
-        print("Model saved in new directory: %s" % path)
+        print("\nModel saved in new directory: %s" % path)
         torch.save(model.state_dict(),
                 "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
-
-
-
 
 
 if __name__ == '__main__':
@@ -390,14 +391,15 @@ if __name__ == '__main__':
         data, target = batch_samples['img'], batch_samples['label']
     skimage.io.imshow(data[0, 1, :, :].numpy())
 
-    """Load Self-Trans model"""
+    """Load given model (Self-Trans by default)"""
     """Change names and locations to the Self-Trans.pt"""
     model = models.densenet169(pretrained=True).cuda()
     # pretrained_net = torch.load('model_backup/Dense169.pt')
     # pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
-    pretrained_net = torch.load('Self-Trans.pt')
+    pretrained_net = torch.load(args.model)
     model.load_state_dict(pretrained_net)
-    modelname = 'Dense169_ssl_luna_moco'
+
+    # modelname = 'Dense169_ssl_luna_moco'
 
     # train
     bs = batchsize
@@ -424,7 +426,7 @@ if __name__ == '__main__':
 
     scheduler = StepLR(optimizer, step_size=1)
 
-    total_epoch = 20
+    total_epoch = args.epoch
     for epoch in range(1, total_epoch + 1):
         train(optimizer, epoch)
 
