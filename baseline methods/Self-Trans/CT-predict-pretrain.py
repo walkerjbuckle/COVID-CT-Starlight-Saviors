@@ -399,7 +399,7 @@ if __name__ == '__main__':
     pretrained_net = torch.load(args.model)
     model.load_state_dict(pretrained_net)
 
-    # modelname = 'Dense169_ssl_luna_moco'
+    modelname = 'Dense169_ssl_luna_moco'
 
     # train
     bs = batchsize
