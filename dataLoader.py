@@ -7,6 +7,7 @@ from PIL import Image
 from skimage import io, transform
 import matplotlib.pyplot as plt
 from skimage.transform import rotate, AffineTransform, warp
+import cv2
 
 class data(Dataset):
     # construct dataset
@@ -62,18 +63,12 @@ class EngineeredData(Dataset):
 			a = (random()) * 300
 			img = img.rotate(a)
 		elif self.op == 3: #applying shift transformations
-			transform = AffineTransform(translation=(25,25))
-			newIMG = warp(img,transform,mode='wrap')
-			img = newIMG
+			ImageChops.offset(img, 25, 25)
 		elif self.op == 4: #adding noise
 			sigma=0.155
 			noisyRandom = random_noise(image,var=sigma**2)
-			plt.imshow(noisyRandom)
-			plt.title('Random Noise')
 		elif self.op == 5: #image blurring
-			blurred = gaussian(image,sigma=1,multichannel=True)
-			plt.imshow(blurred)
-			plt.title('Blurred Image')
+			blurred = img.filter(ImageFilter.BLUR)
 
 
         if self.transform:
