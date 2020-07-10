@@ -60,7 +60,7 @@ class EngineeredData(Dataset):
 		elif op == 2:
 			seed(1)
 			a = (random()) * 300
-			img = rotate(img, angle=a, mode = 'wrap')
+			img = img.rotate(a)
 		elif op == 3: #applying shift transformations
 			transform = AffineTransform(translation=(25,25))
 			newIMG = warp(img,transform,mode='wrap')
