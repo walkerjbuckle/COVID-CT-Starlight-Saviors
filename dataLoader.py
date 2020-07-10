@@ -64,9 +64,9 @@ class EngineeredData(Dataset):
 			img = img.rotate(a)
 		elif self.op == 3: #applying shift transformations
 			img = ImageChops.offset(img, 25, 25)
-		elif self.op == 4: #adding noise
-			sigma=0.155
-			noisyRandom = random_noise(image,var=sigma**2)
+		#elif self.op == 4: #adding noise
+			#sigma=0.155
+			#noisyRandom = random_noise(image,var=sigma**2)
 		elif self.op == 5: #image blurring
 			img = img.filter(ImageFilter.BLUR)
 
