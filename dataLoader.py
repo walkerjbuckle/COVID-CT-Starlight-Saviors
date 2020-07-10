@@ -57,18 +57,18 @@ class EngineeredData(Dataset):
         img = Image.open(img_Name).convert('L')
         cS = self.CT.iloc[idx,3]
 		if self.op == 1:
-			img = np.flipud(img)
+			img = img.transpose(PIL.Image.FLIP_TOP_BOTTOM)
 		elif self.op == 2:
 			seed(1)
 			a = (random()) * 300
 			img = img.rotate(a)
 		elif self.op == 3: #applying shift transformations
-			ImageChops.offset(img, 25, 25)
+			img = ImageChops.offset(img, 25, 25)
 		elif self.op == 4: #adding noise
 			sigma=0.155
 			noisyRandom = random_noise(image,var=sigma**2)
 		elif self.op == 5: #image blurring
-			blurred = img.filter(ImageFilter.BLUR)
+			img = img.filter(ImageFilter.BLUR)
 
 
         if self.transform:
