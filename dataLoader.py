@@ -55,27 +55,27 @@ class EngineeredData(Dataset):
         img_Name = os.path.join(self.root, self.CT.iloc[idx,1])
         img = Image.open(img_Name).convert('L')
         cS = self.CT.iloc[idx,3]
-		if op == 1:
+		if self.op == 1:
 			img = np.flipud(img)
-		elif op == 2:
+		elif self.op == 2:
 			seed(1)
 			a = (random()) * 300
 			img = img.rotate(a)
-		elif op == 3: #applying shift transformations
+		elif self.op == 3: #applying shift transformations
 			transform = AffineTransform(translation=(25,25))
 			newIMG = warp(img,transform,mode='wrap')
 			img = newIMG
-		elif op == 4: #adding noise
+		elif self.op == 4: #adding noise
 			sigma=0.155
 			noisyRandom = random_noise(image,var=sigma**2)
 			plt.imshow(noisyRandom)
 			plt.title('Random Noise')
-		elif op == 5: #image blurring
+		elif self.op == 5: #image blurring
 			blurred = gaussian(image,sigma=1,multichannel=True)
 			plt.imshow(blurred)
 			plt.title('Blurred Image')
 
-		
+
         if self.transform:
             img = self.transform(img)
 	
