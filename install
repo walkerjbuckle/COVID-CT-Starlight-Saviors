@@ -1,9 +1,0 @@
-#!/bin/bash
-echo === Installing Git hooks ===
-if [ "$(ls -A hooks)" ]; then
-	mv hooks/* .git/hooks
-else
-	echo "Error - hooks not found"
-	exit 1
-fi
-echo === Installation Complete ===

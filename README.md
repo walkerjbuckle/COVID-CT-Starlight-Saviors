@@ -15,10 +15,13 @@ Run the install script
 
 ```
 cd COVID-CT-Starlight-Saviors
-./install
+pip install pre-commit
+pip install black
+python -m pip install flake 8
+python3 -m pip install mypy
+pre-commit install
+pre-commit run --all-files
 ```
 
 # Who are we?
 This project is being done by Interns as part of the [MISI Internship program](https://www.misiacademy.tech/)
-
-
