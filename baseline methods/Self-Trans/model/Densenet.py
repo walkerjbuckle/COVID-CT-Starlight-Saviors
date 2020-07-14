@@ -1,9 +1,3 @@
-import re
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils.checkpoint as cp
-from collections import OrderedDict
 # from torchvision.models.utils import load_state_dict_from_url
 import errno
 import hashlib
@@ -12,9 +6,14 @@ import re
 import shutil
 import sys
 import tempfile
-import torch
 import warnings
 import zipfile
+from collections import OrderedDict
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.utils.checkpoint as cp
 
 if sys.version_info[0] == 2:
     from urlparse import urlparse
@@ -28,9 +27,14 @@ try:
 except ImportError:
     # fake tqdm if it's not installed
     class tqdm(object):
-
-        def __init__(self, total=None, disable=False,
-                     unit=None, unit_scale=None, unit_divisor=None):
+        def __init__(
+            self,
+            total=None,
+            disable=False,
+            unit=None,
+            unit_scale=None,
+            unit_divisor=None,
+        ):
             self.total = total
             self.disable = disable
             self.n = 0
@@ -54,17 +58,18 @@ except ImportError:
             if self.disable:
                 return
 
-            sys.stderr.write('\n')
+            sys.stderr.write("\n")
+
 
 # matches bfd8deac from resnet18-bfd8deac.pth
-HASH_REGEX = re.compile(r'-([a-f0-9]*)\.')
+HASH_REGEX = re.compile(r"-([a-f0-9]*)\.")
 
-MASTER_BRANCH = 'master'
-ENV_TORCH_HOME = 'TORCH_HOME'
-ENV_XDG_CACHE_HOME = 'XDG_CACHE_HOME'
-DEFAULT_CACHE_DIR = '~/.cache'
-VAR_DEPENDENCY = 'dependencies'
-MODULE_HUBCONF = 'hubconf.py'
+MASTER_BRANCH = "master"
+ENV_TORCH_HOME = "TORCH_HOME"
+ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
+DEFAULT_CACHE_DIR = "~/.cache"
+VAR_DEPENDENCY = "dependencies"
+MODULE_HUBCONF = "hubconf.py"
 READ_DATA_CHUNK = 8192
 hub_dir = None
 
@@ -73,15 +78,18 @@ hub_dir = None
 def import_module(name, path):
     if sys.version_info >= (3, 5):
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(name, path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
     elif sys.version_info >= (3, 0):
         from importlib.machinery import SourceFileLoader
+
         return SourceFileLoader(name, path).load_module()
     else:
         import imp
+
         return imp.load_source(name, path)
 
 
@@ -94,18 +102,20 @@ def _remove_if_exists(path):
 
 
 def _git_archive_link(repo_owner, repo_name, branch):
-    return 'https://github.com/{}/{}/archive/{}.zip'.format(repo_owner, repo_name, branch)
+    return "https://github.com/{}/{}/archive/{}.zip".format(
+        repo_owner, repo_name, branch
+    )
 
 
 def _download_archive_zip(url, filename):
-    sys.stderr.write('Downloading: \"{}\" to {}\n'.format(url, filename))
+    sys.stderr.write('Downloading: "{}" to {}\n'.format(url, filename))
     # We use a different API for python2 since urllib(2) doesn't recognize the CA
     # certificates in older Python
     if sys.version_info[0] == 2:
         response = requests.get(url, stream=True).raw
     else:
         response = urlopen(url)
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         while True:
             data = response.read(READ_DATA_CHUNK)
             if len(data) == 0:
@@ -122,20 +132,23 @@ def _load_attr_from_module(module, func_name):
 
 def _get_torch_home():
     torch_home = os.path.expanduser(
-        os.getenv(ENV_TORCH_HOME,
-                  os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), 'torch')))
+        os.getenv(
+            ENV_TORCH_HOME,
+            os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
+        )
+    )
     return torch_home
 
 
 def _setup_hubdir():
     global hub_dir
     # Issue warning to move data if old env is set
-    if os.getenv('TORCH_HUB'):
-        warnings.warn('TORCH_HUB is deprecated, please use env TORCH_HOME instead')
+    if os.getenv("TORCH_HUB"):
+        warnings.warn("TORCH_HUB is deprecated, please use env TORCH_HOME instead")
 
     if hub_dir is None:
         torch_home = _get_torch_home()
-        hub_dir = os.path.join(torch_home, 'hub')
+        hub_dir = os.path.join(torch_home, "hub")
 
     if not os.path.exists(hub_dir):
         os.makedirs(hub_dir)
@@ -143,10 +156,12 @@ def _setup_hubdir():
 
 def _parse_repo_info(github):
     branch = MASTER_BRANCH
-    if ':' in github:
-        repo_info, branch = github.split(':')
+    if ":" in github:
+        repo_info, branch = github.split(":")
     else:
         repo_info = github
+
+
 #     repo_owner, repo_name = repo_info.split('/')
 #     return repo_owner, repo_name, branch
 
@@ -159,14 +174,14 @@ def _get_cache_or_reload(github, force_reload):
     # We don't know the repo name before downloading the zip file
     # and inspect name from it.
     # To check if cached repo exists, we need to normalize folder names.
-    repo_dir = os.path.join(hub_dir, '_'.join([repo_owner, repo_name, branch]))
+    repo_dir = os.path.join(hub_dir, "_".join([repo_owner, repo_name, branch]))
 
     use_cache = (not force_reload) and os.path.exists(repo_dir)
 
     if use_cache:
-        sys.stderr.write('Using cache found in {}\n'.format(repo_dir))
+        sys.stderr.write("Using cache found in {}\n".format(repo_dir))
     else:
-        cached_file = os.path.join(hub_dir, branch + '.zip')
+        cached_file = os.path.join(hub_dir, branch + ".zip")
         _remove_if_exists(cached_file)
 
         url = _git_archive_link(repo_owner, repo_name, branch)
@@ -189,10 +204,12 @@ def _get_cache_or_reload(github, force_reload):
 def _check_module_exists(name):
     if sys.version_info >= (3, 4):
         import importlib.util
+
         return importlib.util.find_spec(name) is not None
     elif sys.version_info >= (3, 3):
         # Special case for python3.3
         import importlib.find_loader
+
         return importlib.find_loader(name) is not None
     else:
         # NB: Python2.7 imp.find_module() doesn't respect PEP 302,
@@ -204,6 +221,7 @@ def _check_module_exists(name):
             # 1. Try imp.find_module(), which searches sys.path, but does
             # not respect PEP 302 import hooks.
             import imp
+
             result = imp.find_module(name)
             if result:
                 return True
@@ -225,18 +243,21 @@ def _check_module_exists(name):
                     pass
         return False
 
+
 def _check_dependencies(m):
     dependencies = _load_attr_from_module(m, VAR_DEPENDENCY)
 
     if dependencies is not None:
         missing_deps = [pkg for pkg in dependencies if not _check_module_exists(pkg)]
         if len(missing_deps):
-            raise RuntimeError('Missing dependencies: {}'.format(', '.join(missing_deps)))
+            raise RuntimeError(
+                "Missing dependencies: {}".format(", ".join(missing_deps))
+            )
 
 
 def _load_entry_from_hubconf(m, model):
     if not isinstance(model, str):
-        raise ValueError('Invalid input: model should be a string of function name')
+        raise ValueError("Invalid input: model should be a string of function name")
 
     # Note that if a missing dependency is imported at top level of hubconf, it will
     # throw before this function. It's a chicken and egg situation where we have to
@@ -247,7 +268,7 @@ def _load_entry_from_hubconf(m, model):
     func = _load_attr_from_module(m, model)
 
     if func is None or not callable(func):
-        raise RuntimeError('Cannot find callable {} in hubconf'.format(model))
+        raise RuntimeError("Cannot find callable {} in hubconf".format(model))
 
     return func
 
@@ -288,12 +309,16 @@ def list(github, force_reload=False):
 
     sys.path.insert(0, repo_dir)
 
-    hub_module = import_module(MODULE_HUBCONF, repo_dir + '/' + MODULE_HUBCONF)
+    hub_module = import_module(MODULE_HUBCONF, repo_dir + "/" + MODULE_HUBCONF)
 
     sys.path.remove(repo_dir)
 
     # We take functions starts with '_' as internal helper functions
-    entrypoints = [f for f in dir(hub_module) if callable(getattr(hub_module, f)) and not f.startswith('_')]
+    entrypoints = [
+        f
+        for f in dir(hub_module)
+        if callable(getattr(hub_module, f)) and not f.startswith("_")
+    ]
 
     return entrypoints
 
@@ -318,7 +343,7 @@ def help(github, model, force_reload=False):
 
     sys.path.insert(0, repo_dir)
 
-    hub_module = import_module(MODULE_HUBCONF, repo_dir + '/' + MODULE_HUBCONF)
+    hub_module = import_module(MODULE_HUBCONF, repo_dir + "/" + MODULE_HUBCONF)
 
     sys.path.remove(repo_dir)
 
@@ -351,14 +376,14 @@ def load(github, model, *args, **kwargs):
     # Setup hub_dir to save downloaded files
     _setup_hubdir()
 
-    force_reload = kwargs.get('force_reload', False)
-    kwargs.pop('force_reload', None)
+    force_reload = kwargs.get("force_reload", False)
+    kwargs.pop("force_reload", None)
 
     repo_dir = _get_cache_or_reload(github, force_reload)
 
     sys.path.insert(0, repo_dir)
 
-    hub_module = import_module(MODULE_HUBCONF, repo_dir + '/' + MODULE_HUBCONF)
+    hub_module = import_module(MODULE_HUBCONF, repo_dir + "/" + MODULE_HUBCONF)
 
     entry = _load_entry_from_hubconf(hub_module, model)
 
@@ -376,14 +401,14 @@ def _download_url_to_file(url, dst, hash_prefix, progress):
     if sys.version_info[0] == 2:
         response = requests.get(url, stream=True)
 
-        content_length = response.headers['Content-Length']
+        content_length = response.headers["Content-Length"]
         file_size = content_length
         u = response.raw
     else:
         u = urlopen(url)
 
         meta = u.info()
-        if hasattr(meta, 'getheaders'):
+        if hasattr(meta, "getheaders"):
             content_length = meta.getheaders("Content-Length")
         else:
             content_length = meta.get_all("Content-Length")
@@ -399,8 +424,13 @@ def _download_url_to_file(url, dst, hash_prefix, progress):
     try:
         if hash_prefix is not None:
             sha256 = hashlib.sha256()
-        with tqdm(total=file_size, disable=not progress,
-                  unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+        with tqdm(
+            total=file_size,
+            disable=not progress,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as pbar:
             while True:
                 buffer = u.read(8192)
                 if len(buffer) == 0:
@@ -413,22 +443,26 @@ def _download_url_to_file(url, dst, hash_prefix, progress):
         f.close()
         if hash_prefix is not None:
             digest = sha256.hexdigest()
-            if digest[:len(hash_prefix)] != hash_prefix:
-                raise RuntimeError('invalid hash value (expected "{}", got "{}")'
-                                   .format(hash_prefix, digest))
+            if digest[: len(hash_prefix)] != hash_prefix:
+                raise RuntimeError(
+                    'invalid hash value (expected "{}", got "{}")'.format(
+                        hash_prefix, digest
+                    )
+                )
         shutil.move(f.name, dst)
     finally:
         f.close()
         if os.path.exists(f.name):
             os.remove(f.name)
 
-__all__ = ['DenseNet', 'densenet121', 'densenet169', 'densenet201', 'densenet161']
+
+__all__ = ["DenseNet", "densenet121", "densenet169", "densenet201", "densenet161"]
 
 model_urls = {
-    'densenet121': 'https://download.pytorch.org/models/densenet121-a639ec97.pth',
-    'densenet169': 'https://download.pytorch.org/models/densenet169-b2777c0a.pth',
-    'densenet201': 'https://download.pytorch.org/models/densenet201-c1103571.pth',
-    'densenet161': 'https://download.pytorch.org/models/densenet161-8d451a50.pth',
+    "densenet121": "https://download.pytorch.org/models/densenet121-a639ec97.pth",
+    "densenet169": "https://download.pytorch.org/models/densenet169-b2777c0a.pth",
+    "densenet201": "https://download.pytorch.org/models/densenet201-c1103571.pth",
+    "densenet161": "https://download.pytorch.org/models/densenet161-8d451a50.pth",
 }
 
 
@@ -442,36 +476,69 @@ def _bn_function_factory(norm, relu, conv):
 
 
 class _DenseLayer(nn.Sequential):
-    def __init__(self, num_input_features, growth_rate, bn_size, drop_rate, memory_efficient=False):
+    def __init__(
+        self,
+        num_input_features,
+        growth_rate,
+        bn_size,
+        drop_rate,
+        memory_efficient=False,
+    ):
         super(_DenseLayer, self).__init__()
-        self.add_module('norm1', nn.BatchNorm2d(num_input_features)),
-        self.add_module('relu1', nn.ReLU(inplace=True)),
-        self.add_module('conv1', nn.Conv2d(num_input_features, bn_size *
-                                           growth_rate, kernel_size=1, stride=1,
-                                           bias=False)),
-        self.add_module('norm2', nn.BatchNorm2d(bn_size * growth_rate)),
-        self.add_module('relu2', nn.ReLU(inplace=True)),
-        self.add_module('conv2', nn.Conv2d(bn_size * growth_rate, growth_rate,
-                                           kernel_size=3, stride=1, padding=1,
-                                           bias=False)),
+        self.add_module("norm1", nn.BatchNorm2d(num_input_features)),
+        self.add_module("relu1", nn.ReLU(inplace=True)),
+        self.add_module(
+            "conv1",
+            nn.Conv2d(
+                num_input_features,
+                bn_size * growth_rate,
+                kernel_size=1,
+                stride=1,
+                bias=False,
+            ),
+        ),
+        self.add_module("norm2", nn.BatchNorm2d(bn_size * growth_rate)),
+        self.add_module("relu2", nn.ReLU(inplace=True)),
+        self.add_module(
+            "conv2",
+            nn.Conv2d(
+                bn_size * growth_rate,
+                growth_rate,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
+        ),
         self.drop_rate = drop_rate
         self.memory_efficient = memory_efficient
 
     def forward(self, *prev_features):
         bn_function = _bn_function_factory(self.norm1, self.relu1, self.conv1)
-        if self.memory_efficient and any(prev_feature.requires_grad for prev_feature in prev_features):
+        if self.memory_efficient and any(
+            prev_feature.requires_grad for prev_feature in prev_features
+        ):
             bottleneck_output = cp.checkpoint(bn_function, *prev_features)
         else:
             bottleneck_output = bn_function(*prev_features)
         new_features = self.conv2(self.relu2(self.norm2(bottleneck_output)))
         if self.drop_rate > 0:
-            new_features = F.dropout(new_features, p=self.drop_rate,
-                                     training=self.training)
+            new_features = F.dropout(
+                new_features, p=self.drop_rate, training=self.training
+            )
         return new_features
 
 
 class _DenseBlock(nn.Module):
-    def __init__(self, num_layers, num_input_features, bn_size, growth_rate, drop_rate, memory_efficient=False):
+    def __init__(
+        self,
+        num_layers,
+        num_input_features,
+        bn_size,
+        growth_rate,
+        drop_rate,
+        memory_efficient=False,
+    ):
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
             layer = _DenseLayer(
@@ -481,7 +548,7 @@ class _DenseBlock(nn.Module):
                 drop_rate=drop_rate,
                 memory_efficient=memory_efficient,
             )
-            self.add_module('denselayer%d' % (i + 1), layer)
+            self.add_module("denselayer%d" % (i + 1), layer)
 
     def forward(self, init_features):
         features = [init_features]
@@ -494,11 +561,19 @@ class _DenseBlock(nn.Module):
 class _Transition(nn.Sequential):
     def __init__(self, num_input_features, num_output_features):
         super(_Transition, self).__init__()
-        self.add_module('norm', nn.BatchNorm2d(num_input_features))
-        self.add_module('relu', nn.ReLU(inplace=True))
-        self.add_module('conv', nn.Conv2d(num_input_features, num_output_features,
-                                          kernel_size=1, stride=1, bias=False))
-        self.add_module('pool', nn.AvgPool2d(kernel_size=2, stride=2))
+        self.add_module("norm", nn.BatchNorm2d(num_input_features))
+        self.add_module("relu", nn.ReLU(inplace=True))
+        self.add_module(
+            "conv",
+            nn.Conv2d(
+                num_input_features,
+                num_output_features,
+                kernel_size=1,
+                stride=1,
+                bias=False,
+            ),
+        )
+        self.add_module("pool", nn.AvgPool2d(kernel_size=2, stride=2))
 
 
 class DenseNet(nn.Module):
@@ -517,19 +592,40 @@ class DenseNet(nn.Module):
           but slower. Default: *False*. See `"paper" <https://arxiv.org/pdf/1707.06990.pdf>`_
     """
 
-    def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16),
-                 num_init_features=64, bn_size=4, drop_rate=0, num_classes=4, memory_efficient=False):
+    def __init__(
+        self,
+        growth_rate=32,
+        block_config=(6, 12, 24, 16),
+        num_init_features=64,
+        bn_size=4,
+        drop_rate=0,
+        num_classes=4,
+        memory_efficient=False,
+    ):
 
         super(DenseNet, self).__init__()
 
         # First convolution
-        self.features = nn.Sequential(OrderedDict([
-            ('conv0', nn.Conv2d(3, num_init_features, kernel_size=7, stride=2,
-                                padding=3, bias=False)),
-            ('norm0', nn.BatchNorm2d(num_init_features)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('pool0', nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),
-        ]))
+        self.features = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "conv0",
+                        nn.Conv2d(
+                            3,
+                            num_init_features,
+                            kernel_size=7,
+                            stride=2,
+                            padding=3,
+                            bias=False,
+                        ),
+                    ),
+                    ("norm0", nn.BatchNorm2d(num_init_features)),
+                    ("relu0", nn.ReLU(inplace=True)),
+                    ("pool0", nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),
+                ]
+            )
+        )
 
         # Each denseblock
         num_features = num_init_features
@@ -540,18 +636,20 @@ class DenseNet(nn.Module):
                 bn_size=bn_size,
                 growth_rate=growth_rate,
                 drop_rate=drop_rate,
-                memory_efficient=memory_efficient
+                memory_efficient=memory_efficient,
             )
-            self.features.add_module('denseblock%d' % (i + 1), block)
+            self.features.add_module("denseblock%d" % (i + 1), block)
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
-                trans = _Transition(num_input_features=num_features,
-                                    num_output_features=num_features // 2)
-                self.features.add_module('transition%d' % (i + 1), trans)
+                trans = _Transition(
+                    num_input_features=num_features,
+                    num_output_features=num_features // 2,
+                )
+                self.features.add_module("transition%d" % (i + 1), trans)
                 num_features = num_features // 2
 
         # Final batch norm
-        self.features.add_module('norm5', nn.BatchNorm2d(num_features))
+        self.features.add_module("norm5", nn.BatchNorm2d(num_features))
 
         # Linear layer
         self.classifier = nn.Linear(num_features, num_classes)
@@ -566,7 +664,8 @@ class DenseNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(m.bias, 0)
-    def change_cls_number(self,num_classes):
+
+    def change_cls_number(self, num_classes):
         print("Changing Full Connected")
         self.classifier = nn.Linear(self.num_features, num_classes)
 
@@ -577,6 +676,7 @@ class DenseNet(nn.Module):
         out = torch.flatten(out, 1)
         out = self.classifier(out)
         return out
+
 
 def load_state_dict_from_url(url, model_dir=None, map_location=None, progress=True):
     r"""Loads the Torch serialized object at the given URL.
@@ -598,12 +698,14 @@ def load_state_dict_from_url(url, model_dir=None, map_location=None, progress=Tr
         >>> state_dict = torch.hub.load_state_dict_from_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth')
     """
     # Issue warning to move data if old env is set
-    if os.getenv('TORCH_MODEL_ZOO'):
-        warnings.warn('TORCH_MODEL_ZOO is deprecated, please use env TORCH_HOME instead')
+    if os.getenv("TORCH_MODEL_ZOO"):
+        warnings.warn(
+            "TORCH_MODEL_ZOO is deprecated, please use env TORCH_HOME instead"
+        )
 
     if model_dir is None:
         torch_home = _get_torch_home()
-        model_dir = os.path.join(torch_home, 'checkpoints')
+        model_dir = os.path.join(torch_home, "checkpoints")
 
     try:
         os.makedirs(model_dir)
@@ -631,7 +733,8 @@ def _load_state_dict(model, model_url, progress):
     # They are also in the checkpoints in model_urls. This pattern is used
     # to find such keys.
     pattern = re.compile(
-        r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
+        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$"
+    )
 
     state_dict = load_state_dict_from_url(model_url, progress=progress)
     for key in list(state_dict.keys()):
@@ -643,12 +746,13 @@ def _load_state_dict(model, model_url, progress):
     model.load_state_dict(state_dict)
 
 
-def _densenet(arch, growth_rate, block_config, num_init_features, pretrained, progress,
-              **kwargs):
+def _densenet(
+    arch, growth_rate, block_config, num_init_features, pretrained, progress, **kwargs
+):
 
     if pretrained:
-        number_cls = kwargs['num_classes']
-        kwargs['num_classes'] = 1000
+        number_cls = kwargs["num_classes"]
+        kwargs["num_classes"] = 1000
         model = DenseNet(growth_rate, block_config, num_init_features, **kwargs)
         _load_state_dict(model, model_urls[arch], progress)
         model.change_cls_number(number_cls)
@@ -667,8 +771,9 @@ def densenet121(pretrained=False, progress=True, **kwargs):
         memory_efficient (bool) - If True, uses checkpointing. Much more memory efficient,
           but slower. Default: *False*. See `"paper" <https://arxiv.org/pdf/1707.06990.pdf>`_
     """
-    return _densenet('densenet121', 32, (6, 12, 24, 16), 64, pretrained, progress,
-                     **kwargs)
+    return _densenet(
+        "densenet121", 32, (6, 12, 24, 16), 64, pretrained, progress, **kwargs
+    )
 
 
 def densenet161(pretrained=False, progress=True, **kwargs):
@@ -681,8 +786,9 @@ def densenet161(pretrained=False, progress=True, **kwargs):
         memory_efficient (bool) - If True, uses checkpointing. Much more memory efficient,
           but slower. Default: *False*. See `"paper" <https://arxiv.org/pdf/1707.06990.pdf>`_
     """
-    return _densenet('densenet161', 48, (6, 12, 36, 24), 96, pretrained, progress,
-                     **kwargs)
+    return _densenet(
+        "densenet161", 48, (6, 12, 36, 24), 96, pretrained, progress, **kwargs
+    )
 
 
 def densenet169(pretrained=False, progress=True, **kwargs):
@@ -695,8 +801,9 @@ def densenet169(pretrained=False, progress=True, **kwargs):
         memory_efficient (bool) - If True, uses checkpointing. Much more memory efficient,
           but slower. Default: *False*. See `"paper" <https://arxiv.org/pdf/1707.06990.pdf>`_
     """
-    return _densenet('densenet169', 32, (6, 12, 32, 32), 64, pretrained, progress,
-                     **kwargs)
+    return _densenet(
+        "densenet169", 32, (6, 12, 32, 32), 64, pretrained, progress, **kwargs
+    )
 
 
 def densenet201(pretrained=False, progress=True, **kwargs):
@@ -709,5 +816,6 @@ def densenet201(pretrained=False, progress=True, **kwargs):
         memory_efficient (bool) - If True, uses checkpointing. Much more memory efficient,
           but slower. Default: *False*. See `"paper" <https://arxiv.org/pdf/1707.06990.pdf>`_
     """
-    return _densenet('densenet201', 32, (6, 12, 48, 32), 64, pretrained, progress,
-                     **kwargs)
+    return _densenet(
+        "densenet201", 32, (6, 12, 48, 32), 64, pretrained, progress, **kwargs
+    )

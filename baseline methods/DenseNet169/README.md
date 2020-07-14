@@ -55,26 +55,26 @@ Patients distribution
 <!---
 Patients frequency ('ID:number')
 * train: 12:18  13:9  14:2  15:12  17:20  18:16  19:12  21:8  23:40  24:22  25:11  34:12
-* val: 6:26  16:10  27:22 
+* val: 6:26  16:10  27:22
 * test: 7:4  8:8  10:8  11:3  20:12
 --->
 
 
 ## Training and Evaluation
    In [144] of the script.
-   
-   Training is defined in line `190` of the script and validation is defined in line `241`. 
+
+   Training is defined in line `190` of the script and validation is defined in line `241`.
    In line `488`, start the loading of DenseNet-169 model and do training in line `535`.
-   You can either train by transfering from the ImageNet pretrained model or train from scratch by setting `pretrain = false`.  
-   
-   The performance on val set is observed in line `561`. It will print the target value list and the predict value list per epoch. The F1-score, accuray, and AUC of 10 models are printed as a major vote result per 10 epoch. 
+   You can either train by transfering from the ImageNet pretrained model or train from scratch by setting `pretrain = false`.
+
+   The performance on val set is observed in line `561`. It will print the target value list and the predict value list per epoch. The F1-score, accuray, and AUC of 10 models are printed as a major vote result per 10 epoch.
 
 ## Test
-   In [145] of the script. Line `617`. 
+   In [145] of the script. Line `617`.
 
 ## Initial result
    F1:  0.854
-   
+
    ACC: 0.847
-   
+
    AUC: 0.919

@@ -4,104 +4,96 @@
 # In[147]:
 
 
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-import torch.nn.functional as F
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset
 import os
-from PIL import Image
-import matplotlib.pyplot as plt
-from torch.optim.lr_scheduler import StepLR
-import numpy as np
-from PIL import ImageFile
-from torch.utils.tensorboard import SummaryWriter
+import random
+import re
+import warnings
 from datetime import datetime
+from shutil import copyfile
+
+import albumentations as albu
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import os
-import random 
-from shutil import copyfile
-from torch.utils.data import Dataset
-from torchvision.datasets import ImageFolder
-from PIL import Image
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
-import re
-import albumentations as albu
+import skimage
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+import torchvision.datasets as datasets
+
+# VGGNet
+# ResNet50
+# Dense169
+# Dense121
+# ResNet18
+import torchvision.models as models
+import torchvision.transforms as transforms
+import torchxrayvision as xrv
 from albumentations.pytorch import ToTensor
 from catalyst.data import Augmentor
-import torchxrayvision as xrv
 
+# efficientNet
+from efficientnet_pytorch import EfficientNet
+from PIL import Image, ImageFile
+from skimage.io import imread, imsave
+from sklearn.metrics import roc_auc_score
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
+from torchvision import transforms as transforms
+from torchvision import utils
+from torchvision.datasets import ImageFolder
 
 # In[2]:
 
-
-import torch
-import torchvision
-from torchvision import transforms, utils
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
-import torch.optim as optim
-from torch.utils.data import Dataset
-import os
-from PIL import Image
-import matplotlib.pyplot as plt
-from torch.optim.lr_scheduler import StepLR
-from PIL import Image
-import torch.nn.functional as F
-import torch.nn as nn
-import numpy as np
-from sklearn.metrics import roc_auc_score
-import re
-import albumentations as albu
-from albumentations.pytorch import ToTensor
-from catalyst.data import Augmentor
-from skimage.io import imread, imsave
-import skimage
 
 torch.cuda.empty_cache()
 
 
-
 # In[2]:
 
 
-get_ipython().system('pip install --upgrade efficientnet-pytorch')
+get_ipython().system("pip install --upgrade efficientnet-pytorch")
 
 
 # In[3]:
 
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_transformer = transforms.Compose([
-    transforms.Resize(256),
-    transforms.RandomResizedCrop((224),scale=(0.5,1.0)),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    normalize
-])
+train_transformer = transforms.Compose(
+    [
+        transforms.Resize(256),
+        transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize,
+    ]
+)
 
-val_transformer = transforms.Compose([
-    transforms.Resize(224),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    normalize
-])
+val_transformer = transforms.Compose(
+    [
+        transforms.Resize(224),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        normalize,
+    ]
+)
 
 
 # In[80]:
 
 
-batchsize=10
+batchsize = 10
+
+
 def read_txt(txt_path):
     with open(txt_path) as f:
         lines = f.readlines()
     txt_data = [line.strip() for line in lines]
     return txt_data
+
 
 class CovidCTDataset(Dataset):
     def __init__(self, root_dir, txt_COVID, txt_NonCOVID, transform=None):
@@ -123,12 +115,15 @@ class CovidCTDataset(Dataset):
                 - ......
         """
         self.root_dir = root_dir
-        self.txt_path = [txt_COVID,txt_NonCOVID]
-        self.classes = ['CT_COVID', 'CT_NonCOVID']
+        self.txt_path = [txt_COVID, txt_NonCOVID]
+        self.classes = ["CT_COVID", "CT_NonCOVID"]
         self.num_cls = len(self.classes)
         self.img_list = []
         for c in range(self.num_cls):
-            cls_list = [[os.path.join(self.root_dir,self.classes[c],item), c] for item in read_txt(self.txt_path[c])]
+            cls_list = [
+                [os.path.join(self.root_dir, self.classes[c], item), c]
+                for item in read_txt(self.txt_path[c])
+            ]
             self.img_list += cls_list
         self.transform = transform
 
@@ -140,44 +135,52 @@ class CovidCTDataset(Dataset):
             idx = idx.tolist()
 
         img_path = self.img_list[idx][0]
-        image = Image.open(img_path).convert('RGB')
+        image = Image.open(img_path).convert("RGB")
 
         if self.transform:
             image = self.transform(image)
-        sample = {'img': image,
-                  'label': int(self.img_list[idx][1])}
+        sample = {"img": image, "label": int(self.img_list[idx][1])}
         return sample
 
 
-
-    
-if __name__ == '__main__':
-    trainset = CovidCTDataset(root_dir='new_data/4.4_image',
-                              txt_COVID='new_data/newtxt/train.txt',
-                              txt_NonCOVID='old_data/oldtxt/trainCT_NonCOVID.txt',
-                              transform= train_transformer)
-    valset = CovidCTDataset(root_dir='new_data/4.4_image',
-                              txt_COVID='new_data/newtxt/val.txt',
-                              txt_NonCOVID='old_data/oldtxt/valCT_NonCOVID.txt',
-                              transform= val_transformer)
-    testset = CovidCTDataset(root_dir='new_data/4.4_image',
-                              txt_COVID='new_data/newtxt/test.txt',
-                              txt_NonCOVID='old_data/oldtxt/testCT_NonCOVID.txt',
-                              transform= val_transformer)
+if __name__ == "__main__":
+    trainset = CovidCTDataset(
+        root_dir="new_data/4.4_image",
+        txt_COVID="new_data/newtxt/train.txt",
+        txt_NonCOVID="old_data/oldtxt/trainCT_NonCOVID.txt",
+        transform=train_transformer,
+    )
+    valset = CovidCTDataset(
+        root_dir="new_data/4.4_image",
+        txt_COVID="new_data/newtxt/val.txt",
+        txt_NonCOVID="old_data/oldtxt/valCT_NonCOVID.txt",
+        transform=val_transformer,
+    )
+    testset = CovidCTDataset(
+        root_dir="new_data/4.4_image",
+        txt_COVID="new_data/newtxt/test.txt",
+        txt_NonCOVID="old_data/oldtxt/testCT_NonCOVID.txt",
+        transform=val_transformer,
+    )
     print(trainset.__len__())
     print(valset.__len__())
     print(testset.__len__())
 
-    train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
-    val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
-    test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
-    
+    train_loader = DataLoader(
+        trainset, batch_size=batchsize, drop_last=False, shuffle=True
+    )
+    val_loader = DataLoader(
+        valset, batch_size=batchsize, drop_last=False, shuffle=False
+    )
+    test_loader = DataLoader(
+        testset, batch_size=batchsize, drop_last=False, shuffle=False
+    )
 
 
 # In[31]:
 
 
-# for batch_index, batch_samples in enumerate(train_dataloader):      
+# for batch_index, batch_samples in enumerate(train_dataloader):
 #         data, target = batch_samples[0], batch_samples[1]
 # skimage.io.imshow(data[0,1,:,:].numpy())
 
@@ -186,52 +189,72 @@ if __name__ == '__main__':
 
 
 alpha = None
-device = 'cuda'
+device = "cuda"
+
+
 def train(optimizer, epoch):
-    
+
     model.train()
-    
+
     train_loss = 0
     train_correct = 0
-    
+
     for batch_index, batch_samples in enumerate(train_loader):
-        
+
         # move data to device
-        data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
-#        data = data[:, 0, :, :]
-#        data = data[:, None, :, :]
-#         data, targets_a, targets_b, lam = mixup_data(data, target.long(), alpha, use_cuda=True)
-        
-        
+        data, target = (
+            batch_samples["img"].to(device),
+            batch_samples["label"].to(device),
+        )
+        #        data = data[:, 0, :, :]
+        #        data = data[:, None, :, :]
+        #         data, targets_a, targets_b, lam = mixup_data(data, target.long(), alpha, use_cuda=True)
+
         optimizer.zero_grad()
         output = model(data)
-        
+
         criteria = nn.CrossEntropyLoss()
         loss = criteria(output, target.long())
-#         loss = mixup_criterion(criteria, output, targets_a, targets_b, lam)
+        #         loss = mixup_criterion(criteria, output, targets_a, targets_b, lam)
         train_loss += criteria(output, target.long())
-        
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
+
         pred = output.argmax(dim=1, keepdim=True)
         train_correct += pred.eq(target.long().view_as(pred)).sum().item()
-    
+
         # Display progress and write to tensorboard
         if batch_index % bs == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tTrain Loss: {:.6f}'.format(
-                epoch, batch_index, len(train_loader),
-                100.0 * batch_index / len(train_loader), loss.item()/ bs))
-    
-    print('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
-        100.0 * train_correct / len(train_loader.dataset)))
-    f = open('model_result/{}.txt'.format(modelname), 'a+')
-    f.write('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
-        100.0 * train_correct / len(train_loader.dataset)))
-    f.write('\n')
+            print(
+                "Train Epoch: {} [{}/{} ({:.0f}%)]\tTrain Loss: {:.6f}".format(
+                    epoch,
+                    batch_index,
+                    len(train_loader),
+                    100.0 * batch_index / len(train_loader),
+                    loss.item() / bs,
+                )
+            )
+
+    print(
+        "\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
+            train_loss / len(train_loader.dataset),
+            train_correct,
+            len(train_loader.dataset),
+            100.0 * train_correct / len(train_loader.dataset),
+        )
+    )
+    f = open("model_result/{}.txt".format(modelname), "a+")
+    f.write(
+        "\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
+            train_loss / len(train_loader.dataset),
+            train_correct,
+            len(train_loader.dataset),
+            100.0 * train_correct / len(train_loader.dataset),
+        )
+    )
+    f.write("\n")
     f.close()
 
 
@@ -239,49 +262,50 @@ def train(optimizer, epoch):
 
 
 def val(epoch):
-    
+
     model.eval()
     test_loss = 0
     correct = 0
     results = []
-    
+
     TP = 0
     TN = 0
     FN = 0
     FP = 0
-    
-    
+
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
         tpr_list = []
         fpr_list = []
-        
-        predlist=[]
-        scorelist=[]
-        targetlist=[]
+
+        predlist = []
+        scorelist = []
+        targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(val_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
-#            data = data[:, 0, :, :]
-#            data = data[:, None, :, :]
+            data, target = (
+                batch_samples["img"].to(device),
+                batch_samples["label"].to(device),
+            )
+            #            data = data[:, 0, :, :]
+            #            data = data[:, None, :, :]
             output = model(data)
-            
+
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-#             print('target',target.long()[:, 2].view_as(pred))
+            #             print('target',target.long()[:, 2].view_as(pred))
             correct += pred.eq(target.long().view_as(pred)).sum().item()
-            
-#             print(output[:,1].cpu().numpy())
-#             print((output[:,1]+output[:,0]).cpu().numpy())
-#             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
-            targetcpu=target.long().cpu().numpy()
-            predlist=np.append(predlist, pred.cpu().numpy())
-            scorelist=np.append(scorelist, score.cpu().numpy()[:,1])
-            targetlist=np.append(targetlist,targetcpu)
-           
-          
+
+            #             print(output[:,1].cpu().numpy())
+            #             print((output[:,1]+output[:,0]).cpu().numpy())
+            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
+            targetcpu = target.long().cpu().numpy()
+            predlist = np.append(predlist, pred.cpu().numpy())
+            scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
+            targetlist = np.append(targetlist, targetcpu)
+
     return targetlist, scorelist, predlist
 
 
@@ -289,60 +313,63 @@ def val(epoch):
 
 
 def test(epoch):
-    
+
     model.eval()
     test_loss = 0
     correct = 0
     results = []
-    
+
     TP = 0
     TN = 0
     FN = 0
     FP = 0
-    
-    
+
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
         tpr_list = []
         fpr_list = []
-        
-        predlist=[]
-        scorelist=[]
-        targetlist=[]
+
+        predlist = []
+        scorelist = []
+        targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(test_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
-#            data = data[:, 0, :, :]
-#            data = data[:, None, :, :]
-#             print(target)
+            data, target = (
+                batch_samples["img"].to(device),
+                batch_samples["label"].to(device),
+            )
+            #            data = data[:, 0, :, :]
+            #            data = data[:, None, :, :]
+            #             print(target)
             output = model(data)
-            
+
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-#             print('target',target.long()[:, 2].view_as(pred))
+            #             print('target',target.long()[:, 2].view_as(pred))
             correct += pred.eq(target.long().view_as(pred)).sum().item()
-#             TP += ((pred == 1) & (target.long()[:, 2].view_as(pred).data == 1)).cpu().sum()
-#             TN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
-# #             # FN    predict 0 label 1
-#             FN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 1)).cpu().sum()
-# #             # FP    predict 1 label 0
-#             FP += ((pred == 1) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
-#             print(TP,TN,FN,FP)
-            
-            
-#             print(output[:,1].cpu().numpy())
-#             print((output[:,1]+output[:,0]).cpu().numpy())
-#             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
-            targetcpu=target.long().cpu().numpy()
-            predlist=np.append(predlist, pred.cpu().numpy())
-            scorelist=np.append(scorelist, score.cpu().numpy()[:,1])
-            targetlist=np.append(targetlist,targetcpu)
-           
+            #             TP += ((pred == 1) & (target.long()[:, 2].view_as(pred).data == 1)).cpu().sum()
+            #             TN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
+            # #             # FN    predict 0 label 1
+            #             FN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 1)).cpu().sum()
+            # #             # FP    predict 1 label 0
+            #             FP += ((pred == 1) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
+            #             print(TP,TN,FN,FP)
+
+            #             print(output[:,1].cpu().numpy())
+            #             print((output[:,1]+output[:,0]).cpu().numpy())
+            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
+            targetcpu = target.long().cpu().numpy()
+            predlist = np.append(predlist, pred.cpu().numpy())
+            scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
+            targetlist = np.append(targetlist, targetcpu)
+
     return targetlist, scorelist, predlist
-    
+
     # Write to tensorboard
+
+
 #     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
 
@@ -369,7 +396,7 @@ def test(epoch):
 #     def forward(self, x):
 #         x = self.densenet121(x)
 #         return x
-  
+
 
 # device = 'cuda'
 # CKPT_PATH = 'model.pth.tar'
@@ -380,7 +407,7 @@ def test(epoch):
 # CKPT_PATH = './CheXNet/model.pth.tar'
 
 # if os.path.isfile(CKPT_PATH):
-#     checkpoint = torch.load(CKPT_PATH)        
+#     checkpoint = torch.load(CKPT_PATH)
 #     state_dict = checkpoint['state_dict']
 #     remove_data_parallel = False
 
@@ -413,10 +440,10 @@ def test(epoch):
 # In[149]:
 
 
-### DenseNet
+# DenseNet
+
 
 class DenseNetModel(nn.Module):
-
     def __init__(self):
         """
         Pass in parsed HyperOptArgumentParser to the model
@@ -430,93 +457,83 @@ class DenseNetModel(nn.Module):
     def forward(self, x):
         logits = self.dense_net(x)
         return logits
-    
+
+
 model = DenseNetModel().cuda()
-modelname = 'DenseNet_medical'
+modelname = "DenseNet_medical"
 # print(model)
 
 
 # In[146]:
 
 
-### SimpleCNN
+# SimpleCNN
 class SimpleCNN(torch.nn.Module):
     def __init__(self):
-        super(SimpleCNN, self).__init__() # b, 3, 32, 32
-        layer1 = torch.nn.Sequential() 
-        layer1.add_module('conv1', torch.nn.Conv2d(3, 32, 3, 1, padding=1))
- 
-        #b, 32, 32, 32
-        layer1.add_module('relu1', torch.nn.ReLU(True)) 
-        layer1.add_module('pool1', torch.nn.MaxPool2d(2, 2)) # b, 32, 16, 16 //池化为16*16
+        super(SimpleCNN, self).__init__()  # b, 3, 32, 32
+        layer1 = torch.nn.Sequential()
+        layer1.add_module("conv1", torch.nn.Conv2d(3, 32, 3, 1, padding=1))
+
+        # b, 32, 32, 32
+        layer1.add_module("relu1", torch.nn.ReLU(True))
+        layer1.add_module("pool1", torch.nn.MaxPool2d(2, 2))  # b, 32, 16, 16 //池化为16*16
         self.layer1 = layer1
         layer4 = torch.nn.Sequential()
-        layer4.add_module('fc1', torch.nn.Linear(401408, 2))       
+        layer4.add_module("fc1", torch.nn.Linear(401408, 2))
         self.layer4 = layer4
- 
+
     def forward(self, x):
         conv1 = self.layer1(x)
         fc_input = conv1.view(conv1.size(0), -1)
         fc_out = self.layer4(fc_input)
- 
+
+
 model = SimpleCNN().cuda()
-modelname = 'SimpleCNN'
+modelname = "SimpleCNN"
 
 
 # In[119]:
 
 
-### ResNet18
-import torchvision.models as models
 model = models.resnet18(pretrained=True).cuda()
-modelname = 'ResNet18'
+modelname = "ResNet18"
 
 
 # In[106]:
 
 
-### Dense121
-import torchvision.models as models
 model = models.densenet121(pretrained=True).cuda()
-modelname = 'Dense121'
+modelname = "Dense121"
 
 
 # In[109]:
 
 
-### Dense169
-import torchvision.models as models
 model = models.densenet169(pretrained=True).cuda()
-modelname = 'Dense169'
+modelname = "Dense169"
 
 
 # In[100]:
 
 
-### ResNet50
-import torchvision.models as models
 model = models.resnet50(pretrained=True).cuda()
-modelname = 'ResNet50'
+modelname = "ResNet50"
 
 
 # In[114]:
 
 
-### VGGNet
-import torchvision.models as models
 model = models.vgg16(pretrained=True)
 model = model.cuda()
-modelname = 'vgg16'
+modelname = "vgg16"
 
 
 # In[139]:
 
 
-### efficientNet
-from efficientnet_pytorch import EfficientNet
-model = EfficientNet.from_pretrained('efficientnet-b0', num_classes=2)
+model = EfficientNet.from_pretrained("efficientnet-b0", num_classes=2)
 model = model.cuda()
-modelname = 'efficientNet-b0'
+modelname = "efficientNet-b0"
 
 
 # model = EfficientNet.from_name('efficientnet-b1').cuda()
@@ -526,17 +543,13 @@ modelname = 'efficientNet-b0'
 # In[ ]:
 
 
-
-
-
 # In[ ]:
 
 
 # train
 bs = 10
 votenum = 10
-import warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 r_list = []
 p_list = []
@@ -549,65 +562,68 @@ AUC_list = []
 vote_pred = np.zeros(valset.__len__())
 vote_score = np.zeros(valset.__len__())
 
-#optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
+# optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
-#scheduler = StepLR(optimizer, step_size=1)
+# scheduler = StepLR(optimizer, step_size=1)
 
 total_epoch = 3000
-for epoch in range(1, total_epoch+1):
+for epoch in range(1, total_epoch + 1):
     train(optimizer, epoch)
-    
+
     targetlist, scorelist, predlist = val(epoch)
-    print('target',targetlist)
-    print('score',scorelist)
-    print('predict',predlist)
-    vote_pred = vote_pred + predlist 
-    vote_score = vote_score + scorelist 
+    print("target", targetlist)
+    print("score", scorelist)
+    print("predict", predlist)
+    vote_pred = vote_pred + predlist
+    vote_score = vote_score + scorelist
 
     if epoch % votenum == 0:
-        
+
         # major vote
-        vote_pred[vote_pred <= (votenum/2)] = 0
-        vote_pred[vote_pred > (votenum/2)] = 1
-        vote_score = vote_score/votenum
-        
-        print('vote_pred', vote_pred)
-        print('targetlist', targetlist)
+        vote_pred[vote_pred <= (votenum / 2)] = 0
+        vote_pred[vote_pred > (votenum / 2)] = 1
+        vote_score = vote_score / votenum
+
+        print("vote_pred", vote_pred)
+        print("targetlist", targetlist)
         TP = ((vote_pred == 1) & (targetlist == 1)).sum()
         TN = ((vote_pred == 0) & (targetlist == 0)).sum()
         FN = ((vote_pred == 0) & (targetlist == 1)).sum()
         FP = ((vote_pred == 1) & (targetlist == 0)).sum()
-        
-        
-        print('TP=',TP,'TN=',TN,'FN=',FN,'FP=',FP)
-        print('TP+FP',TP+FP)
+
+        print("TP=", TP, "TN=", TN, "FN=", FN, "FP=", FP)
+        print("TP+FP", TP + FP)
         p = TP / (TP + FP)
-        print('precision',p)
+        print("precision", p)
         p = TP / (TP + FP)
         r = TP / (TP + FN)
-        print('recall',r)
+        print("recall", r)
         F1 = 2 * r * p / (r + p)
         acc = (TP + TN) / (TP + TN + FP + FN)
-        print('F1',F1)
-        print('acc',acc)
+        print("F1", F1)
+        print("acc", acc)
         AUC = roc_auc_score(targetlist, vote_score)
-        print('AUCp', roc_auc_score(targetlist, vote_pred))
-        print('AUC', AUC)
-        
-        
-        
-#         if epoch == total_epoch:
-        torch.save(model.state_dict(), "model_backup/{}.pt".format(modelname))  
-        
+        print("AUCp", roc_auc_score(targetlist, vote_pred))
+        print("AUC", AUC)
+
+        #         if epoch == total_epoch:
+        torch.save(model.state_dict(), "model_backup/{}.pt".format(modelname))
+
         vote_pred = np.zeros(valset.__len__())
         vote_score = np.zeros(valset.__len__())
-        print('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-        epoch, r, p, F1, acc, AUC))
+        print(
+            "\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}".format(
+                epoch, r, p, F1, acc, AUC
+            )
+        )
 
-        f = open('model_result/{}.txt'.format(modelname), 'a+')
-        f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-        epoch, r, p, F1, acc, AUC))
+        f = open("model_result/{}.txt".format(modelname), "a+")
+        f.write(
+            "\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}".format(
+                epoch, r, p, F1, acc, AUC
+            )
+        )
         f.close()
 
 
@@ -616,8 +632,7 @@ for epoch in range(1, total_epoch+1):
 
 # test
 bs = 10
-import warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 r_list = []
 p_list = []
@@ -630,95 +645,96 @@ AUC_list = []
 vote_pred = np.zeros(testset.__len__())
 vote_score = np.zeros(testset.__len__())
 
-#optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
+# optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 scheduler = StepLR(optimizer, step_size=1)
 
 total_epoch = 10
-for epoch in range(1, total_epoch+1):
-    
+for epoch in range(1, total_epoch + 1):
+
     targetlist, scorelist, predlist = test(epoch)
-#     print('target',targetlist)
-#     print('score',scorelist)
-#     print('predict',predlist)
-    vote_pred = vote_pred + predlist 
-    vote_score = vote_score + scorelist 
-    
+    #     print('target',targetlist)
+    #     print('score',scorelist)
+    #     print('predict',predlist)
+    vote_pred = vote_pred + predlist
+    vote_score = vote_score + scorelist
+
     TP = ((predlist == 1) & (targetlist == 1)).sum()
     TN = ((predlist == 0) & (targetlist == 0)).sum()
     FN = ((predlist == 0) & (targetlist == 1)).sum()
     FP = ((predlist == 1) & (targetlist == 0)).sum()
 
-    print('TP=',TP,'TN=',TN,'FN=',FN,'FP=',FP)
-    print('TP+FP',TP+FP)
+    print("TP=", TP, "TN=", TN, "FN=", FN, "FP=", FP)
+    print("TP+FP", TP + FP)
     p = TP / (TP + FP)
-    print('precision',p)
+    print("precision", p)
     p = TP / (TP + FP)
     r = TP / (TP + FN)
-    print('recall',r)
+    print("recall", r)
     F1 = 2 * r * p / (r + p)
     acc = (TP + TN) / (TP + TN + FP + FN)
-    print('F1',F1)
-    print('acc',acc)
+    print("F1", F1)
+    print("acc", acc)
     AUC = roc_auc_score(targetlist, vote_score)
-    print('AUC', AUC)
+    print("AUC", AUC)
 
     if epoch % votenum == 0:
-        
+
         # major vote
-        vote_pred[vote_pred <= (votenum/2)] = 0
-        vote_pred[vote_pred > (votenum/2)] = 1
-        
-#         print('vote_pred', vote_pred)
-#         print('targetlist', targetlist)
+        vote_pred[vote_pred <= (votenum / 2)] = 0
+        vote_pred[vote_pred > (votenum / 2)] = 1
+
+        #         print('vote_pred', vote_pred)
+        #         print('targetlist', targetlist)
         TP = ((vote_pred == 1) & (targetlist == 1)).sum()
         TN = ((vote_pred == 0) & (targetlist == 0)).sum()
         FN = ((vote_pred == 0) & (targetlist == 1)).sum()
         FP = ((vote_pred == 1) & (targetlist == 0)).sum()
-        
-        print('TP=',TP,'TN=',TN,'FN=',FN,'FP=',FP)
-        print('TP+FP',TP+FP)
+
+        print("TP=", TP, "TN=", TN, "FN=", FN, "FP=", FP)
+        print("TP+FP", TP + FP)
         p = TP / (TP + FP)
-        print('precision',p)
+        print("precision", p)
         p = TP / (TP + FP)
         r = TP / (TP + FN)
-        print('recall',r)
+        print("recall", r)
         F1 = 2 * r * p / (r + p)
         acc = (TP + TN) / (TP + TN + FP + FN)
-        print('F1',F1)
-        print('acc',acc)
+        print("F1", F1)
+        print("acc", acc)
         AUC = roc_auc_score(targetlist, vote_score)
-        print('AUC', AUC)
-        
-        
-#         f = open('model_result/{modelname}.txt', 'a+')
-#         f.write('precision, recall, F1, acc= \n')
-#         f.writelines(str(p))
-#         f.writelines('\n')
-#         f.writelines(str(r))
-#         f.writelines('\n')
-#         f.writelines(str(F1))
-#         f.writelines('\n')
-#         f.writelines(str(acc))
-#         f.writelines('\n')
-#         f.close()
-        
-        
-        vote_pred = np.zeros((1,testset.__len__()))
-        vote_score = np.zeros(testset.__len__())
-        print('vote_pred',vote_pred)
-        print('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-        epoch, r, p, F1, acc, AUC))
+        print("AUC", AUC)
 
-        f = open(f'model_result/test_{modelname}.txt', 'a+')
-        f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-        epoch, r, p, F1, acc, AUC))
+        #         f = open('model_result/{modelname}.txt', 'a+')
+        #         f.write('precision, recall, F1, acc= \n')
+        #         f.writelines(str(p))
+        #         f.writelines('\n')
+        #         f.writelines(str(r))
+        #         f.writelines('\n')
+        #         f.writelines(str(F1))
+        #         f.writelines('\n')
+        #         f.writelines(str(acc))
+        #         f.writelines('\n')
+        #         f.close()
+
+        vote_pred = np.zeros((1, testset.__len__()))
+        vote_score = np.zeros(testset.__len__())
+        print("vote_pred", vote_pred)
+        print(
+            "\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}".format(
+                epoch, r, p, F1, acc, AUC
+            )
+        )
+
+        f = open(f"model_result/test_{modelname}.txt", "a+")
+        f.write(
+            "\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}".format(
+                epoch, r, p, F1, acc, AUC
+            )
+        )
         f.close()
 
 
 # In[ ]:
-
-
-
-
+# flake8: noqa
