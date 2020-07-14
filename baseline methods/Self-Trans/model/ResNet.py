@@ -47,7 +47,8 @@ except ImportError:
             if self.total is None:
                 sys.stderr.write("\r{0:.1f} bytes".format(self.n))
             else:
-                sys.stderr.write("\r{0:.1f}%".format(100 * self.n / float(self.total)))
+                sys.stderr.write("\r{0:.1f}%".format(
+                    100 * self.n / float(self.total)))
             sys.stderr.flush()
 
         def __enter__(self):
@@ -133,7 +134,8 @@ def _get_torch_home():
     torch_home = os.path.expanduser(
         os.getenv(
             ENV_TORCH_HOME,
-            os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
+            os.path.join(os.getenv(ENV_XDG_CACHE_HOME,
+                                   DEFAULT_CACHE_DIR), "torch"),
         )
     )
     return torch_home
@@ -143,7 +145,8 @@ def _setup_hubdir():
     global hub_dir
     # Issue warning to move data if old env is set
     if os.getenv("TORCH_HUB"):
-        warnings.warn("TORCH_HUB is deprecated, please use env TORCH_HOME instead")
+        warnings.warn(
+            "TORCH_HUB is deprecated, please use env TORCH_HOME instead")
 
     if hub_dir is None:
         torch_home = _get_torch_home()
@@ -245,7 +248,8 @@ def _check_dependencies(m):
     dependencies = _load_attr_from_module(m, VAR_DEPENDENCY)
 
     if dependencies is not None:
-        missing_deps = [pkg for pkg in dependencies if not _check_module_exists(pkg)]
+        missing_deps = [
+            pkg for pkg in dependencies if not _check_module_exists(pkg)]
         if len(missing_deps):
             raise RuntimeError(
                 "Missing dependencies: {}".format(", ".join(missing_deps))
@@ -254,7 +258,8 @@ def _check_dependencies(m):
 
 def _load_entry_from_hubconf(m, model):
     if not isinstance(model, str):
-        raise ValueError("Invalid input: model should be a string of function name")
+        raise ValueError(
+            "Invalid input: model should be a string of function name")
 
     # Note that if a missing dependency is imported at top level of hubconf, it will
     # throw before this function. It's a chicken and egg situation where we have to
@@ -517,9 +522,11 @@ class BasicBlock(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
-            raise ValueError("BasicBlock only supports groups=1 and base_width=64")
+            raise ValueError(
+                "BasicBlock only supports groups=1 and base_width=64")
         if dilation > 1:
-            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+            raise NotImplementedError(
+                "Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
@@ -626,7 +633,8 @@ class ResNet(nn.Module):
         if len(replace_stride_with_dilation) != 3:
             raise ValueError(
                 "replace_stride_with_dilation should be None "
-                "or a 3-element tuple, got {}".format(replace_stride_with_dilation)
+                "or a 3-element tuple, got {}".format(
+                    replace_stride_with_dilation)
             )
         self.groups = groups
         self.base_width = width_per_group
@@ -651,7 +659,8 @@ class ResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.kaiming_normal_(
+                    m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -784,7 +793,8 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
         number_cls = kwargs["num_classes"]
         kwargs["num_classes"] = 1000
         model = ResNet(block, layers, **kwargs)
-        state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)
+        state_dict = load_state_dict_from_url(
+            model_urls[arch], progress=progress)
         model.load_state_dict(state_dict)
         model.change_cls_number(number_cls)
     else:

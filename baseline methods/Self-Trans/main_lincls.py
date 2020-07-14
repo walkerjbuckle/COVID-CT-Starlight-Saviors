@@ -35,7 +35,8 @@ parser.add_argument(
     metavar="ARCH",
     default="resnet50",
     choices=model_names,
-    help="model architecture: " + " | ".join(model_names) + " (default: resnet50)",
+    help="model architecture: " +
+    " | ".join(model_names) + " (default: resnet50)",
 )
 parser.add_argument(
     "-j",
@@ -81,7 +82,8 @@ parser.add_argument(
     type=int,
     help="learning rate schedule (when to drop lr by a ratio)",
 )
-parser.add_argument("--momentum", default=0.9, type=float, metavar="M", help="momentum")
+parser.add_argument("--momentum", default=0.9, type=float,
+                    metavar="M", help="momentum")
 parser.add_argument(
     "--wd",
     "--weight-decay",
@@ -184,7 +186,8 @@ def main():
         args.world_size = ngpus_per_node * args.world_size
         # Use torch.multiprocessing.spawn to launch distributed processes: the
         # main_worker process function
-        mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
+        mp.spawn(main_worker, nprocs=ngpus_per_node,
+                 args=(ngpus_per_node, args))
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
@@ -267,7 +270,8 @@ def main_worker(gpu, ngpus_per_node, args):
             # DistributedDataParallel, we need to divide the batch size
             # ourselves based on the total number of GPUs we have
             args.batch_size = int(args.batch_size / ngpus_per_node)
-            args.workers = int((args.workers + ngpus_per_node - 1) / ngpus_per_node)
+            args.workers = int(
+                (args.workers + ngpus_per_node - 1) / ngpus_per_node)
             model = torch.nn.parallel.DistributedDataParallel(
                 model, device_ids=[args.gpu]
             )
@@ -346,7 +350,8 @@ def main_worker(gpu, ngpus_per_node, args):
     )
 
     if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        train_sampler = torch.utils.data.distributed.DistributedSampler(
+            train_dataset)
     else:
         train_sampler = None
 
@@ -504,7 +509,8 @@ def validate(val_loader, model, criterion, args):
 
         # TODO: this should also be done with the ProgressMeter
         print(
-            " * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}".format(top1=top1, top5=top5)
+            " * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}".format(
+                top1=top1, top5=top5)
         )
 
     return top1.avg

@@ -48,7 +48,8 @@ except ImportError:
             if self.total is None:
                 sys.stderr.write("\r{0:.1f} bytes".format(self.n))
             else:
-                sys.stderr.write("\r{0:.1f}%".format(100 * self.n / float(self.total)))
+                sys.stderr.write("\r{0:.1f}%".format(
+                    100 * self.n / float(self.total)))
             sys.stderr.flush()
 
         def __enter__(self):
@@ -134,7 +135,8 @@ def _get_torch_home():
     torch_home = os.path.expanduser(
         os.getenv(
             ENV_TORCH_HOME,
-            os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
+            os.path.join(os.getenv(ENV_XDG_CACHE_HOME,
+                                   DEFAULT_CACHE_DIR), "torch"),
         )
     )
     return torch_home
@@ -144,7 +146,8 @@ def _setup_hubdir():
     global hub_dir
     # Issue warning to move data if old env is set
     if os.getenv("TORCH_HUB"):
-        warnings.warn("TORCH_HUB is deprecated, please use env TORCH_HOME instead")
+        warnings.warn(
+            "TORCH_HUB is deprecated, please use env TORCH_HOME instead")
 
     if hub_dir is None:
         torch_home = _get_torch_home()
@@ -248,7 +251,8 @@ def _check_dependencies(m):
     dependencies = _load_attr_from_module(m, VAR_DEPENDENCY)
 
     if dependencies is not None:
-        missing_deps = [pkg for pkg in dependencies if not _check_module_exists(pkg)]
+        missing_deps = [
+            pkg for pkg in dependencies if not _check_module_exists(pkg)]
         if len(missing_deps):
             raise RuntimeError(
                 "Missing dependencies: {}".format(", ".join(missing_deps))
@@ -257,7 +261,8 @@ def _check_dependencies(m):
 
 def _load_entry_from_hubconf(m, model):
     if not isinstance(model, str):
-        raise ValueError("Invalid input: model should be a string of function name")
+        raise ValueError(
+            "Invalid input: model should be a string of function name")
 
     # Note that if a missing dependency is imported at top level of hubconf, it will
     # throw before this function. It's a chicken and egg situation where we have to
@@ -456,7 +461,8 @@ def _download_url_to_file(url, dst, hash_prefix, progress):
             os.remove(f.name)
 
 
-__all__ = ["DenseNet", "densenet121", "densenet169", "densenet201", "densenet161"]
+__all__ = ["DenseNet", "densenet121",
+           "densenet169", "densenet201", "densenet161"]
 
 model_urls = {
     "densenet121": "https://download.pytorch.org/models/densenet121-a639ec97.pth",
@@ -753,11 +759,13 @@ def _densenet(
     if pretrained:
         number_cls = kwargs["num_classes"]
         kwargs["num_classes"] = 1000
-        model = DenseNet(growth_rate, block_config, num_init_features, **kwargs)
+        model = DenseNet(growth_rate, block_config,
+                         num_init_features, **kwargs)
         _load_state_dict(model, model_urls[arch], progress)
         model.change_cls_number(number_cls)
     else:
-        model = DenseNet(growth_rate, block_config, num_init_features, **kwargs)
+        model = DenseNet(growth_rate, block_config,
+                         num_init_features, **kwargs)
     return model
 
 

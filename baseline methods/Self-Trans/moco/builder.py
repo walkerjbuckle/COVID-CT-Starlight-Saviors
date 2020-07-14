@@ -41,11 +41,13 @@ class MoCo(nn.Module):
             dim_mlp = self.encoder_q.classifier.weight.shape[1]
             #             self.encoder_q.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.encoder_q.fc)
             self.encoder_q.classifier = nn.Sequential(
-                nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.encoder_q.classifier
+                nn.Linear(dim_mlp, dim_mlp), nn.ReLU(
+                ), self.encoder_q.classifier
             )
             #             self.encoder_k.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.encoder_k.fc)
             self.encoder_k.classifier = nn.Sequential(
-                nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.encoder_k.classifier
+                nn.Linear(dim_mlp, dim_mlp), nn.ReLU(
+                ), self.encoder_k.classifier
             )
 
         for param_q, param_k in zip(
@@ -68,7 +70,8 @@ class MoCo(nn.Module):
         for param_q, param_k in zip(
             self.encoder_q.parameters(), self.encoder_k.parameters()
         ):
-            param_k.data = param_k.data * self.m + param_q.data * (1.0 - self.m)
+            param_k.data = param_k.data * self.m + \
+                param_q.data * (1.0 - self.m)
 
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys):

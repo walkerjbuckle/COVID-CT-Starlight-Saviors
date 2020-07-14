@@ -53,7 +53,8 @@ parser.add_argument(
     default="resnet50",
     type=str,
     choices=model_names,
-    help="model architecture: " + " | ".join(model_names) + " (default: resnet50)",
+    help="model architecture: " +
+    " | ".join(model_names) + " (default: resnet50)",
 )
 parser.add_argument(
     "-j",
@@ -159,7 +160,8 @@ parser.add_argument(
 )
 
 parser.add_argument("--save-epoch", default=40, type=int)
-parser.add_argument("--save-path", default="LUNA_resnet50_128_imagenet", type=str)
+parser.add_argument(
+    "--save-path", default="LUNA_resnet50_128_imagenet", type=str)
 
 # moco specific configs:
 parser.add_argument(
@@ -183,7 +185,8 @@ parser.add_argument(
 
 # options for moco v2
 parser.add_argument("--mlp", default=True, help="use mlp head")
-parser.add_argument("--aug-plus", default=True, help="use moco v2 data augmentation")
+parser.add_argument("--aug-plus", default=True,
+                    help="use moco v2 data augmentation")
 parser.add_argument("--cos", default=True, help="use cosine lr schedule")
 
 
@@ -219,7 +222,8 @@ def main():
         args.world_size = ngpus_per_node * args.world_size
         # Use torch.multiprocessing.spawn to launch distributed processes: the
         # main_worker process function
-        mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
+        mp.spawn(main_worker, nprocs=ngpus_per_node,
+                 args=(ngpus_per_node, args))
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
@@ -274,7 +278,8 @@ def main_worker(gpu, ngpus_per_node, args):
             # DistributedDataParallel, we need to divide the batch size
             # ourselves based on the total number of GPUs we have
             args.batch_size = int(args.batch_size / ngpus_per_node)
-            args.workers = int((args.workers + ngpus_per_node - 1) / ngpus_per_node)
+            args.workers = int(
+                (args.workers + ngpus_per_node - 1) / ngpus_per_node)
             model = torch.nn.parallel.DistributedDataParallel(
                 model, device_ids=[args.gpu]
             )
@@ -339,10 +344,12 @@ def main_worker(gpu, ngpus_per_node, args):
         augmentation = [
             transforms.RandomResizedCrop(224, scale=(0.2, 1.0)),
             transforms.RandomApply(
-                [transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8  # not strengthened
+                # not strengthened
+                [transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8
             ),
             transforms.RandomGrayscale(p=0.2),
-            transforms.RandomApply([moco.loader.GaussianBlur([0.1, 2.0])], p=0.5),
+            transforms.RandomApply(
+                [moco.loader.GaussianBlur([0.1, 2.0])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize,
@@ -359,11 +366,13 @@ def main_worker(gpu, ngpus_per_node, args):
         ]
 
     train_dataset = datasets.ImageFolder(
-        traindir, moco.loader.TwoCropsTransform(transforms.Compose(augmentation))
+        traindir, moco.loader.TwoCropsTransform(
+            transforms.Compose(augmentation))
     )
 
     if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        train_sampler = torch.utils.data.distributed.DistributedSampler(
+            train_dataset)
     else:
         train_sampler = None
 

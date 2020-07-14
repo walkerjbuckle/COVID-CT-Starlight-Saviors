@@ -61,7 +61,8 @@ get_ipython().system("pip install --upgrade efficientnet-pytorch")
 # In[3]:
 
 
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+normalize = transforms.Normalize(
+    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_transformer = transforms.Compose(
     [
         transforms.Resize(256),
@@ -476,7 +477,8 @@ class SimpleCNN(torch.nn.Module):
 
         # b, 32, 32, 32
         layer1.add_module("relu1", torch.nn.ReLU(True))
-        layer1.add_module("pool1", torch.nn.MaxPool2d(2, 2))  # b, 32, 16, 16 //池化为16*16
+        layer1.add_module("pool1", torch.nn.MaxPool2d(2, 2)
+                          )  # b, 32, 16, 16 //池化为16*16
         self.layer1 = layer1
         layer4 = torch.nn.Sequential()
         layer4.add_module("fc1", torch.nn.Linear(401408, 2))

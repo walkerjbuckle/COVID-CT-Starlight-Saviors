@@ -16,9 +16,7 @@ Run the install script
 ```
 cd COVID-CT-Starlight-Saviors
 pip install pre-commit
-pip install black
-python -m pip install flake 8
-python3 -m pip install mypy
+pip install autopep8
 pre-commit install
 pre-commit run --all-files
 ```

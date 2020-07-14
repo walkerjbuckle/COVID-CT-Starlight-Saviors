@@ -70,7 +70,8 @@ class MBConvBlock(nn.Module):
         # Squeeze and Excitation layer, if desired
         if self.has_se:
             num_squeezed_channels = max(
-                1, int(self._block_args.input_filters * self._block_args.se_ratio)
+                1, int(self._block_args.input_filters *
+                       self._block_args.se_ratio)
             )
             self._se_reduce = Conv2d(
                 in_channels=oup, out_channels=num_squeezed_channels, kernel_size=1
@@ -105,7 +106,8 @@ class MBConvBlock(nn.Module):
         # Squeeze and Excitation
         if self.has_se:
             x_squeezed = F.adaptive_avg_pool2d(x, 1)
-            x_squeezed = self._se_expand(self._swish(self._se_reduce(x_squeezed)))
+            x_squeezed = self._se_expand(
+                self._swish(self._se_reduce(x_squeezed)))
             x = torch.sigmoid(x_squeezed) * x
 
         x = self._bn2(self._project_conv(x))
@@ -121,7 +123,8 @@ class MBConvBlock(nn.Module):
             and input_filters == output_filters
         ):
             if drop_connect_rate:
-                x = drop_connect(x, p=drop_connect_rate, training=self.training)
+                x = drop_connect(x, p=drop_connect_rate,
+                                 training=self.training)
             x = x + inputs  # skip connection
         return x
 
@@ -181,7 +184,8 @@ class EfficientNet(nn.Module):
                 output_filters=round_filters(
                     block_args.output_filters, self._global_params
                 ),
-                num_repeat=round_repeats(block_args.num_repeat, self._global_params),
+                num_repeat=round_repeats(
+                    block_args.num_repeat, self._global_params),
             )
 
             # The first block needs to take care of stride and filter size increase.
@@ -191,12 +195,14 @@ class EfficientNet(nn.Module):
                     input_filters=block_args.output_filters, stride=1
                 )
             for _ in range(block_args.num_repeat - 1):
-                self._blocks.append(MBConvBlock(block_args, self._global_params))
+                self._blocks.append(MBConvBlock(
+                    block_args, self._global_params))
 
         # Head
         in_channels = block_args.output_filters  # output of final block
         out_channels = round_filters(1280, self._global_params)
-        self._conv_head = Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self._conv_head = Conv2d(
+            in_channels, out_channels, kernel_size=1, bias=False)
         self._bn1 = nn.BatchNorm2d(
             num_features=out_channels, momentum=bn_mom, eps=bn_eps
         )
@@ -252,19 +258,22 @@ class EfficientNet(nn.Module):
     @classmethod
     def from_name(cls, model_name, override_params=None):
         cls._check_model_name_is_valid(model_name)
-        blocks_args, global_params = get_model_params(model_name, override_params)
+        blocks_args, global_params = get_model_params(
+            model_name, override_params)
         return cls(blocks_args, global_params)
 
     @classmethod
     def from_pretrained(
         cls, model_name, advprop=False, num_classes=1000, in_channels=3
     ):
-        model = cls.from_name(model_name, override_params={"num_classes": num_classes})
+        model = cls.from_name(model_name, override_params={
+                              "num_classes": num_classes})
         load_pretrained_weights(
             model, model_name, load_fc=(num_classes == 1000), advprop=advprop
         )
         if in_channels != 3:
-            Conv2d = get_same_padding_conv2d(image_size=model._global_params.image_size)
+            Conv2d = get_same_padding_conv2d(
+                image_size=model._global_params.image_size)
             out_channels = round_filters(32, model._global_params)
             model._conv_stem = Conv2d(
                 in_channels, out_channels, kernel_size=3, stride=2, bias=False
@@ -282,12 +291,14 @@ class EfficientNet(nn.Module):
         """ Validates model name. """
         valid_models = ["efficientnet-b" + str(i) for i in range(9)]
         if model_name not in valid_models:
-            raise ValueError("model_name should be one of: " + ", ".join(valid_models))
+            raise ValueError("model_name should be one of: " +
+                             ", ".join(valid_models))
 
 
 def efficientnetb0(num_classes=2, pretrained=False):
     if pretrained:
-        model = EfficientNet.from_pretrained("efficientnet-b0", num_classes=num_classes)
+        model = EfficientNet.from_pretrained(
+            "efficientnet-b0", num_classes=num_classes)
     else:
         model = EfficientNet.from_name("efficientnet-b0")
         model.change_cls_number(num_classes=num_classes)
@@ -296,7 +307,8 @@ def efficientnetb0(num_classes=2, pretrained=False):
 
 def efficientnetb1(num_classes=2, pretrained=False):
     if pretrained:
-        model = EfficientNet.from_pretrained("efficientnet-b1", num_classes=num_classes)
+        model = EfficientNet.from_pretrained(
+            "efficientnet-b1", num_classes=num_classes)
     else:
         model = EfficientNet.from_name("efficientnet-b1")
         model.change_cls_number(num_classes=num_classes)
@@ -305,7 +317,8 @@ def efficientnetb1(num_classes=2, pretrained=False):
 
 def efficientnetb2(num_classes=2, pretrained=False):
     if pretrained:
-        model = EfficientNet.from_pretrained("efficientnet-b2", num_classes=num_classes)
+        model = EfficientNet.from_pretrained(
+            "efficientnet-b2", num_classes=num_classes)
     else:
         model = EfficientNet.from_name("efficientnet-b2")
         model.change_cls_number(num_classes=num_classes)
@@ -314,7 +327,8 @@ def efficientnetb2(num_classes=2, pretrained=False):
 
 def efficientnetb3(num_classes=2, pretrained=False):
     if pretrained:
-        model = EfficientNet.from_pretrained("efficientnet-b3", num_classes=num_classes)
+        model = EfficientNet.from_pretrained(
+            "efficientnet-b3", num_classes=num_classes)
     else:
         model = EfficientNet.from_name("efficientnet-b3")
         model.change_cls_number(num_classes=num_classes)
@@ -323,7 +337,8 @@ def efficientnetb3(num_classes=2, pretrained=False):
 
 def efficientnetb7(num_classes=2, pretrained=False):
     if pretrained:
-        model = EfficientNet.from_pretrained("efficientnet-b7", num_classes=num_classes)
+        model = EfficientNet.from_pretrained(
+            "efficientnet-b7", num_classes=num_classes)
     else:
         model = EfficientNet.from_name("efficientnet-b7")
         model.change_cls_number(num_classes=num_classes)

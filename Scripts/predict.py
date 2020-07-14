@@ -1,42 +1,44 @@
 #!/usr/bin/env python3
 
 # Fix for PyInstaller
+from sys import argv, exit
+from os import path
+import glob
+import torchvision.models as models
+import torchvision.transforms as transforms
+from PIL import ImageFile
+from PIL import Image
+import torch
 from os import environ
 environ["PYTORCH_JIT"] = "0"
 
 # Import stuff we will need
-import torch
-from PIL import Image
-from PIL import ImageFile
-import torchvision.transforms as transforms
-import torchvision.models as models
-import glob
-from os import path
-from sys import argv, exit
 
 # Constants
 
 # Initialize torchvision transformer
 normalize = transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
-                                     std=[0.33165374, 0.33165374, 0.33165374])
+                                 std=[0.33165374, 0.33165374, 0.33165374])
 val_transformer = transforms.Compose([
-    transforms.Resize((224,224)),
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     normalize
 ])
 
 # Function Definitions
 
+
 def image_load(path):
-        ret = Image.open(path).convert('RGB')
-        ret = val_transformer(ret).float()
-        ret = ret.clone().detach()
-        ret = ret.unsqueeze(0)
-        if torch.cuda.is_available():
-            ret = ret.cuda()
-        return ret
+    ret = Image.open(path).convert('RGB')
+    ret = val_transformer(ret).float()
+    ret = ret.clone().detach()
+    ret = ret.unsqueeze(0)
+    if torch.cuda.is_available():
+        ret = ret.cuda()
+    return ret
 
 # Code for run as main
+
 
 if __name__ == "__main__":
     # Check to ensure correct argument usage
@@ -68,4 +70,5 @@ if __name__ == "__main__":
     elif pred == 1:
         print("This patient is predicted to be COVID-19 negative.")
     else:
-        print("An unknown error has occurred and the model cannot evaluate the provided data.")
+        print(
+            "An unknown error has occurred and the model cannot evaluate the provided data.")
