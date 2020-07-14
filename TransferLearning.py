@@ -14,7 +14,9 @@ import copy
 
 plt.ion()
 
+
 #Finetuning
+
 model_ft = models.resnet18(pretrained=True)
 num_ftrs = model_ft.fc.in_features
 model_ft.fc = nn.Linear(num_ftrs, 2)
@@ -27,7 +29,14 @@ optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
+#Finetuning-Training
+
+model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
+
+
+
 #Fixed Feature Extracter
+
 model_conv = torchvision.models.resnet18(pretrained=True)
 for param in model_conv.parameters():
   param.requires_grad = False
@@ -36,6 +45,10 @@ model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
 
-optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+optimizer_conv = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+
+#Fixed Feature Extracter-Training
+
+model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs=25)
