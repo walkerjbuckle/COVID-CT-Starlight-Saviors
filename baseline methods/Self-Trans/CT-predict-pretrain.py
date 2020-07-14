@@ -48,7 +48,6 @@ parser.add_argument('-b', '--batch-size', default=64, type=int,
                          'using Data Parallel or Distributed Data Parallel')
 
 
-
 parser.add_argument('--train-root', default='../../Images-processed',
                     help='root directory for training dataset')
 
@@ -71,7 +70,6 @@ parser.add_argument('--data-split', default='../../Data-split',
                                 valCT_NonCOVID.txt""")
 
 
-
 parser.add_argument('--save-dir', default='model_backup',
                     help='Directory for storing saved model when finished. Must already exist.')
 
@@ -84,11 +82,13 @@ alpha = None
 alpha_name = f'{alpha}'
 device = 'cuda'
 
+
 def read_txt(txt_path):
     with open(txt_path) as f:
         lines = f.readlines()
     txt_data = [line.strip() for line in lines]
     return txt_data
+
 
 class CovidCTDataset(Dataset):
     def __init__(self, root_dir, txt_COVID, txt_NonCOVID, transform=None):
@@ -110,12 +110,13 @@ class CovidCTDataset(Dataset):
                 - ......
         """
         self.root_dir = root_dir
-        self.txt_path = [txt_COVID,txt_NonCOVID]
+        self.txt_path = [txt_COVID, txt_NonCOVID]
         self.classes = ['CT_COVID', 'CT_NonCOVID']
         self.num_cls = len(self.classes)
         self.img_list = []
         for c in range(self.num_cls):
-            cls_list = [[os.path.join(self.root_dir,self.classes[c],item), c] for item in read_txt(self.txt_path[c])]
+            cls_list = [[os.path.join(self.root_dir, self.classes[c], item), c]
+                        for item in read_txt(self.txt_path[c])]
             self.img_list += cls_list
         self.transform = transform
 
@@ -147,9 +148,10 @@ def train(optimizer, epoch):
     for batch_index, batch_samples in enumerate(train_loader):
 
         # move data to device
-        data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
+        data, target = batch_samples['img'].to(
+            device), batch_samples['label'].to(device)
 
-        ## adjust data to meet the input dimension of model
+        # adjust data to meet the input dimension of model
         #         data = data[:, 0, :, :]
         #         data = data[:, None, :, :]
 
@@ -192,7 +194,6 @@ def train(optimizer, epoch):
 # training process definition ends  here ################################################################################
 
 
-
 # val process is defined here ###########################################################################################
 
 def val(epoch):
@@ -217,7 +218,8 @@ def val(epoch):
         targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(val_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
+            data, target = batch_samples['img'].to(
+                device), batch_samples['label'].to(device)
 
             #             data = data[:, 0, :, :]
             #             data = data[:, None, :, :]
@@ -269,7 +271,8 @@ def test(epoch):
         targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(test_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
+            data, target = batch_samples['img'].to(
+                device), batch_samples['label'].to(device)
             #             data = data[:, 0, :, :]
             #             data = data[:, None, :, :]
             #             print(target)
@@ -314,15 +317,13 @@ def save_trained_model(model):
         sys.exit("Failed to create save directory")
     else:
         torch.save(model.state_dict(),
-                "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
+                   "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
     return
-
-
 
 
 if __name__ == '__main__':
 
-    ########## Mean and std are calculated from the train dataset
+    # Mean and std are calculated from the train dataset
     normalize = transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                      std=[0.33165374, 0.33165374, 0.33165374])
     train_transformer = transforms.Compose([
@@ -352,36 +353,35 @@ if __name__ == '__main__':
         normalize
     ])
 
-
     train_root_path = args.train_root
     val_root_path = args.val_root
     test_root_path = args.test_root
 
     data_split_path = args.data_split
 
-
-    trainset = CovidCTDataset(root_dir = train_root_path,
-                                  txt_COVID = data_split_path + '/COVID/trainCT_COVID.txt',
-                                  txt_NonCOVID = data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
-                                  transform=train_transformer)
+    trainset = CovidCTDataset(root_dir=train_root_path,
+                              txt_COVID=data_split_path + '/COVID/trainCT_COVID.txt',
+                              txt_NonCOVID=data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
+                              transform=train_transformer)
     valset = CovidCTDataset(root_dir=val_root_path,
-                            txt_COVID = data_split_path + '/COVID/valCT_COVID.txt',
-                            txt_NonCOVID = data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
+                            txt_COVID=data_split_path + '/COVID/valCT_COVID.txt',
+                            txt_NonCOVID=data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
                             transform=val_transformer)
     testset = CovidCTDataset(root_dir=test_root_path,
-                             txt_COVID = data_split_path + '/COVID/testCT_COVID.txt',
-                             txt_NonCOVID = data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
+                             txt_COVID=data_split_path + '/COVID/testCT_COVID.txt',
+                             txt_NonCOVID=data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
                              transform=val_transformer)
 
     print("Training set length: %d" % trainset.__len__())
     print("Validation set length: %d" % valset.__len__())
-    print("Testing set length: %d " %testset.__len__())
+    print("Testing set length: %d " % testset.__len__())
 
-    train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
-    val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
-    test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
-
-
+    train_loader = DataLoader(
+        trainset, batch_size=batchsize, drop_last=False, shuffle=True)
+    val_loader = DataLoader(valset, batch_size=batchsize,
+                            drop_last=False, shuffle=False)
+    test_loader = DataLoader(
+        testset, batch_size=batchsize, drop_last=False, shuffle=False)
 
     for batch_index, batch_samples in enumerate(train_loader):
         data, target = batch_samples['img'], batch_samples['label']
@@ -529,4 +529,3 @@ if __name__ == '__main__':
     # epoch, r, p, F1, acc, AUC))
     # f.close()
     # torch.save(model.state_dict(), "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname,alpha_name))
-

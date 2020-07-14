@@ -8,17 +8,17 @@ if __name__ == '__main__':
 
     covidMain = 'CT_COVID'
     nonCovidMain = 'CT_NonCOVID'
-    
-    covidZips = [zipfile.ZipFile('CT_COVID_1.zip', 'r'), zipfile.ZipFile('CT_COVID_2.zip', 'r')]
-    nonCovidZips = [zipfile.ZipFile('CT_NonCOVID_1.zip', 'r'), zipfile.ZipFile('CT_NonCOVID_2.zip', 'r')]
+
+    covidZips = [zipfile.ZipFile(
+        'CT_COVID_1.zip', 'r'), zipfile.ZipFile('CT_COVID_2.zip', 'r')]
+    nonCovidZips = [zipfile.ZipFile(
+        'CT_NonCOVID_1.zip', 'r'), zipfile.ZipFile('CT_NonCOVID_2.zip', 'r')]
 
     for file in covidZips:
         file.extractall(covidMain)
 
     for file in nonCovidZips:
         file.extractall(nonCovidMain)
-
-    
 
 
 """
@@ -30,17 +30,17 @@ that this was the most effective way to sort the images given that the files are
 #import shutil
 #import os
 #
-#def createImageLists(folders, images):
+# def createImageLists(folders, images):
 #    for folder in folders:
 #        images.append(os.listdir(folder))
 #
-#def moveImages(folders, images, mainFolder):
+# def moveImages(folders, images, mainFolder):
 #    for index in range(0, len(folders)):
 #        for image in images[index]:
 #            shutil.move(folders[index]+'/'+image, mainFolder)
 #            #print(folders[index]+'/'+image)
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    covidMain = 'CT_COVID'
 #    nonCovidMain = 'CT_NonCOVID'
 #    covidFolders = ['CT_COVID_1', 'CT_COVID_2']
@@ -54,6 +54,3 @@ that this was the most effective way to sort the images given that the files are
 #
 #    moveImages(covidFolders, covidImages, covidMain)
 #    moveImages(nonCovidFolders, nonCovidImages, nonCovidMain)
-
-    
-
