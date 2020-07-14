@@ -32,7 +32,7 @@ model_conv = torchvision.models.resnet18(pretrained=True)
 for param in model_conv.parameters():
   param.requires_grad = False
   
- model_conv = model_conv.to(device)
+model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
 
