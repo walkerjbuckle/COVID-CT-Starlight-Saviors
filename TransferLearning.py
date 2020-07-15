@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
+from CNNv2 import CNN
 
 plt.ion()
 
