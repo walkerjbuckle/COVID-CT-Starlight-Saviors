@@ -388,7 +388,7 @@ if __name__ == '__main__':
 
 
     # if args.model_name == "densenset169"
-    if cuda:
+    if torch.cuda.is_available():
         model = models.densenet169(pretrained=True).cuda()
     else:
         model = models.densenet169(pretrained=True)
