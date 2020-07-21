@@ -91,7 +91,7 @@ parser.add_argument('--save-dir', default='model_backup',
                     help='Directory for storing saved model when finished. Must already exist.')
 
 
-parser.add_argument('--model-path', default='Self-Trans.pt',
+parser.add_argument('--model-path', default='../Self-Trans/Self-Trans.pt',
                     help='File path for model to be tested')
 
 parser.add_argument('--model-name', default="Dense169_self_trans",
