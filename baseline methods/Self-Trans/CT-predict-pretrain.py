@@ -34,7 +34,22 @@ import torchvision.models as models
 import argparse
 
 
-torch.cuda.empty_cache()
+model_names = {
+        #'densenet121':  Densenet.densenet121,
+        #'densenet161':  Densenet.densenet161,
+        'densenet169':  models.densenet169(pretrained=True),
+        #'resnet18':     ResNet.resnet18,
+        #'resnet50':     ResNet.resnet50,
+        #'wide_resnet101':ResNet.wide_resnet101_2,
+        #'vgg16':        VGG.vgg16,
+        #'CNN':          SimpleCNN.CNN,
+        #'Linear':       SimpleCNN.Linear,
+        #'SimpleCNN':    SimpleCNN.SimpleCNN,
+        #'efficientnet-b7': Efficientnet.efficientnetb7,
+        #'efficientnet-b1': Efficientnet.efficientnetb1,
+        #'efficientnet-b0': Efficientnet.efficientnetb0
+    }
+
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -76,14 +91,19 @@ parser.add_argument('--save-dir', default='model_backup',
                     help='Directory for storing saved model when finished. Must already exist.')
 
 
-parser.add_argument('--model', default='Self-Trans.pt',
+parser.add_argument('--model-path', default='Self-Trans.pt',
                     help='File path for model to be tested')
+
+parser.add_argument('--model-name', default="Dense169_self_trans",
+                    help='Name of model for fine tuning, must be in model_names dict')
 
 parser.add_argument('--epoch', default=20, type=int,
                     help='Number of epochs to run for testing.')
 
 args = parser.parse_args()
 batchsize = args.batch_size
+
+torch.cuda.empty_cache()
 
 alpha = None
 # alpha is None if mixup is not used
@@ -141,7 +161,7 @@ class CovidCTDataset(Dataset):
                   'label': int(self.img_list[idx][1])}
         return sample
 
-# training process is defined here #####################################################################################
+
 def train(optimizer, epoch):
     model.train()
 
@@ -153,20 +173,11 @@ def train(optimizer, epoch):
         # move data to device
         data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
 
-        ## adjust data to meet the input dimension of model
-        #         data = data[:, 0, :, :]
-        #         data = data[:, None, :, :]
-
-        # mixup
-        #         data, targets_a, targets_b, lam = mixup_data(data, target, alpha, use_cuda=True)
 
         optimizer.zero_grad()
         output = model(data)
         criteria = nn.CrossEntropyLoss()
         loss = criteria(output, target.long())
-
-        # mixup loss
-        #         loss = mixup_criterion(criteria, output, targets_a, targets_b, lam)
 
         train_loss += criteria(output, target.long())
 
@@ -184,37 +195,22 @@ def train(optimizer, epoch):
                 100.0 * batch_index / len(train_loader), loss.item() / bs))
 
 
-#     print('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-#         train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
-#         100.0 * train_correct / len(train_loader.dataset)))
-#     f = open('model_result/{}.txt'.format(modelname), 'a+')
-#     f.write('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-#         train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
-#         100.0 * train_correct / len(train_loader.dataset)))
-#     f.write('\n')
-#     f.close()
-# training process definition ends  here ################################################################################
-
-
-
-# val process is defined here ###########################################################################################
-
 def val(epoch):
     model.eval()
     test_loss = 0
     correct = 0
     results = []
 
-    TP = 0
-    TN = 0
-    FN = 0
-    FP = 0
+    # TP = 0
+    # TN = 0
+    # FN = 0
+    # FP = 0
 
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
-        tpr_list = []
-        fpr_list = []
+        # tpr_list = []
+        # fpr_list = []
 
         predlist = []
         scorelist = []
@@ -246,10 +242,6 @@ def val(epoch):
     # Write to tensorboard
 #     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
-# val process definition ends here ######################################################################################
-
-
-# test process is defined here ##########################################################################################
 
 def test(epoch):
     model.eval()
@@ -257,16 +249,16 @@ def test(epoch):
     correct = 0
     results = []
 
-    TP = 0
-    TN = 0
-    FN = 0
-    FP = 0
+    # TP = 0
+    # TN = 0
+    # FN = 0
+    # FP = 0
 
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
-        tpr_list = []
-        fpr_list = []
+        # tpr_list = []
+        # fpr_list = []
 
         predlist = []
         scorelist = []
@@ -304,8 +296,6 @@ def test(epoch):
     # Write to tensorboard
 #     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
-# test process definition ends here #####################################################################################
-
 
 def save_trained_model(model, modelname, alpha_name):
 
@@ -322,6 +312,7 @@ def save_trained_model(model, modelname, alpha_name):
         print("\nModel saved in new directory: %s" % path)
         torch.save(model.state_dict(),
                 "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
+
 
 
 if __name__ == '__main__':
@@ -385,23 +376,32 @@ if __name__ == '__main__':
     val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
     test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
 
-
-
     for batch_index, batch_samples in enumerate(train_loader):
         data, target = batch_samples['img'], batch_samples['label']
     skimage.io.imshow(data[0, 1, :, :].numpy())
 
+#### Load specific model ######################################################
+
+# Will need to be changed for full integration
     """Load given model (Self-Trans by default)"""
     """Change names and locations to the Self-Trans.pt"""
-    model = models.densenet169(pretrained=True).cuda()
+
+
+    # if args.model_name == "densenset169"
+    if cuda:
+        model = models.densenet169(pretrained=True).cuda()
+    else:
+        model = models.densenet169(pretrained=True)
+
+
     # pretrained_net = torch.load('model_backup/Dense169.pt')
     # pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
-    pretrained_net = torch.load(args.model)
+    pretrained_net = torch.load(args.model_path)
     model.load_state_dict(pretrained_net)
+    modelname = args.model_name
+###############################################################################
 
-    modelname = 'Dense169_ssl_luna_moco'
-
-    # train
+     # train
     bs = batchsize
     votenum = 10
     import warnings
