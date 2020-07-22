@@ -26,9 +26,9 @@ parser.add_argument('--train-script', '--ts', default="main_moco.py",
                     help='Name of python file to run for training')
 
 
-parser.add_argument('--data',  default='LUNA', type=str,
+parser.add_argument('--data',  default='../../Images-Processed', type=str,
                     help='path to dataset')
-parser.add_argument('-a', '--arch', default='resnet50',type=str,
+parser.add_argument('-a', '--arch', default='densenet169',type=str,
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -44,7 +44,7 @@ parser.add_argument('-b', '--batch-size', default=128, type=int,
                     help='mini-batch size (default: 256), this is the total '
                          'batch size of all GPUs on the current node when '
                          'using Data Parallel or Distributed Data Parallel')
-parser.add_argument('--lr', '--learning-rate', default=0.03, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.0015, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum of SGD solver')
@@ -101,7 +101,7 @@ def main():
 
     newArgs = []
     for arg in vars(args):
-        if arg != "train_script"
+        if arg != "train_script":
             attr = getattr(args, arg)
 
             if attr != None:
