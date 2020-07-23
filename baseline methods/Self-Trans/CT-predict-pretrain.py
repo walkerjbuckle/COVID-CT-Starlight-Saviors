@@ -34,22 +34,6 @@ import torchvision.models as models
 import argparse
 
 
-model_names = {
-        #'densenet121':  Densenet.densenet121,
-        #'densenet161':  Densenet.densenet161,
-        'densenet169':  models.densenet169(pretrained=True),
-        #'resnet18':     ResNet.resnet18,
-        #'resnet50':     ResNet.resnet50,
-        #'wide_resnet101':ResNet.wide_resnet101_2,
-        #'vgg16':        VGG.vgg16,
-        #'CNN':          SimpleCNN.CNN,
-        #'Linear':       SimpleCNN.Linear,
-        #'SimpleCNN':    SimpleCNN.SimpleCNN,
-        #'efficientnet-b7': Efficientnet.efficientnetb7,
-        #'efficientnet-b1': Efficientnet.efficientnetb1,
-        #'efficientnet-b0': Efficientnet.efficientnetb0
-    }
-
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -199,18 +183,11 @@ def val(epoch):
     model.eval()
     test_loss = 0
     correct = 0
-    results = []
 
-    # TP = 0
-    # TN = 0
-    # FN = 0
-    # FP = 0
 
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
-        # tpr_list = []
-        # fpr_list = []
 
         predlist = []
         scorelist = []
@@ -219,28 +196,20 @@ def val(epoch):
         for batch_index, batch_samples in enumerate(val_loader):
             data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
 
-            #             data = data[:, 0, :, :]
-            #             data = data[:, None, :, :]
             output = model(data)
 
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-            #             print('target',target.long()[:, 2].view_as(pred))
+
             correct += pred.eq(target.long().view_as(pred)).sum().item()
 
-            #             print(output[:,1].cpu().numpy())
-            #             print((output[:,1]+output[:,0]).cpu().numpy())
-            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
             targetcpu = target.long().cpu().numpy()
             predlist = np.append(predlist, pred.cpu().numpy())
             scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
             targetlist = np.append(targetlist, targetcpu)
 
     return targetlist, scorelist, predlist
-
-    # Write to tensorboard
-#     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
 
 def test(epoch):
@@ -249,16 +218,9 @@ def test(epoch):
     correct = 0
     results = []
 
-    # TP = 0
-    # TN = 0
-    # FN = 0
-    # FP = 0
-
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
-        # tpr_list = []
-        # fpr_list = []
 
         predlist = []
         scorelist = []
@@ -266,35 +228,20 @@ def test(epoch):
         # Predict
         for batch_index, batch_samples in enumerate(test_loader):
             data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
-            #             data = data[:, 0, :, :]
-            #             data = data[:, None, :, :]
-            #             print(target)
+
             output = model(data)
 
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-            #             print('target',target.long()[:, 2].view_as(pred))
-            correct += pred.eq(target.long().view_as(pred)).sum().item()
-            #             TP += ((pred == 1) & (target.long()[:, 2].view_as(pred).data == 1)).cpu().sum()
-            #             TN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
-            # #             # FN    predict 0 label 1
-            #             FN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 1)).cpu().sum()
-            # #             # FP    predict 1 label 0
-            #             FP += ((pred == 1) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
-            #             print(TP,TN,FN,FP)
 
-            #             print(output[:,1].cpu().numpy())
-            #             print((output[:,1]+output[:,0]).cpu().numpy())
-            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
+            correct += pred.eq(target.long().view_as(pred)).sum().item()
+
             targetcpu = target.long().cpu().numpy()
             predlist = np.append(predlist, pred.cpu().numpy())
             scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
             targetlist = np.append(targetlist, targetcpu)
     return targetlist, scorelist, predlist
-
-    # Write to tensorboard
-#     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
 
 def save_trained_model(model, modelname, alpha_name):
@@ -324,7 +271,6 @@ if __name__ == '__main__':
         transforms.Resize(256),
         transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
         transforms.RandomHorizontalFlip(),
-        #     transforms.RandomRotation(90),
         # random brightness and random contrast
         transforms.ColorJitter(brightness=0.2, contrast=0.2),
         transforms.ToTensor(),
@@ -332,8 +278,7 @@ if __name__ == '__main__':
     ])
 
     val_transformer = transforms.Compose([
-        #     transforms.Resize(224),
-        #     transforms.CenterCrop(224),
+
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         normalize
@@ -380,26 +325,20 @@ if __name__ == '__main__':
         data, target = batch_samples['img'], batch_samples['label']
     skimage.io.imshow(data[0, 1, :, :].numpy())
 
-#### Load specific model ######################################################
 
-# Will need to be changed for full integration
-    """Load given model (Self-Trans by default)"""
+    """Load Self-Trans model"""
     """Change names and locations to the Self-Trans.pt"""
 
-
-    # if args.model_name == "densenset169"
     if torch.cuda.is_available():
         model = models.densenet169(pretrained=True).cuda()
     else:
         model = models.densenet169(pretrained=True)
 
 
-    # pretrained_net = torch.load('model_backup/Dense169.pt')
-    # pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
     pretrained_net = torch.load(args.model_path)
     model.load_state_dict(pretrained_net)
     modelname = args.model_name
-###############################################################################
+####
 
      # train
     bs = batchsize
@@ -418,11 +357,10 @@ if __name__ == '__main__':
     vote_pred = np.zeros(valset.__len__())
     vote_score = np.zeros(valset.__len__())
 
-    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
+
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
-    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.95)
 
     scheduler = StepLR(optimizer, step_size=1)
 
@@ -465,12 +403,8 @@ if __name__ == '__main__':
             print('AUCp', roc_auc_score(targetlist, vote_pred))
             print('AUC', AUC)
 
-            #         if epoch == total_epoch:
 
             save_trained_model(model, modelname, alpha_name)
-
-            # torch.save(model.state_dict(),
-            #            "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
 
             vote_pred = np.zeros(valset.__len__())
             vote_score = np.zeros(valset.__len__())
@@ -478,11 +412,6 @@ if __name__ == '__main__':
                 '\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
                     epoch, r, p, F1, acc, AUC))
 
-    #         f = open('model_result/medical_transfer/{}_{}.txt'.format(modelname,alpha_name), 'a+')
-    #         f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
-    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-    #         epoch, r, p, F1, acc, AUC))
-    #         f.close()
 
     # test
     bs = 10
@@ -494,10 +423,7 @@ if __name__ == '__main__':
     p_list = []
     acc_list = []
     AUC_list = []
-    # TP = 0
-    # TN = 0
-    # FN = 0
-    # FP = 0
+
     vote_pred = np.zeros(testset.__len__())
     vote_score = np.zeros(testset.__len__())
 
@@ -527,12 +453,4 @@ if __name__ == '__main__':
     print('acc', acc)
     AUC = roc_auc_score(targetlist, vote_score)
     print('AUC', AUC)
-
-    # f = open(f'model_result/medical_transfer/test_{modelname}_{alpha_name}_LUNA_moco_CT_moco.txt', 'a+')
-    # f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
-    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
-    # epoch, r, p, F1, acc, AUC))
-    # f.close()
-    # torch.save(model.state_dict(), "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname,alpha_name))
-
 
