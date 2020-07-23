@@ -3,8 +3,21 @@
 """
 #import torchvision.models as models
 import argparse
-import main_moco
 import sys
+
+
+try:
+    import main_moco
+except ImportError:
+    pass
+
+
+try:
+    import get_conv.py
+    import train
+except ImportError:
+    pass
+
 """
 Training API for tested models
 """
@@ -74,7 +87,7 @@ parser.add_argument('--multiprocessing-distributed', default=True,
                          'multi node data parallel training')
 
 parser.add_argument('--save-epoch',default=40,type=int)
-parser.add_argument('--save-path',default='LUNA_resnet50_128_imagenet',type=str)
+parser.add_argument('--save-path',default='Self-Trans',type=str)
 
 # moco specific configs:
 parser.add_argument('--moco-dim', default=128, type=int,
@@ -99,20 +112,36 @@ args = parser.parse_args()
 
 def main():
 
-    newArgs = []
-    for arg in vars(args):
-        if arg != "train_script":
-            attr = getattr(args, arg)
-
-            if attr != None:
-                attr = "{}".format(attr)
-                newArgs.append("--{}".format(arg))
-                newArgs.append(attr)
-
-
     if args.train_script == "main_moco.py":
+        
+        newArgs = []
+        for arg in vars(args):
+            if arg != "train_script":
+                attr = getattr(args, arg)
+
+                if attr != None:
+                    attr = "{}".format(attr)
+                    newArgs.append("--{}".format(arg))
+                    newArgs.append(attr)
+
         main_moco.main(newArgs)
 
+    
+    elif args.train_script == "blinear-cnn-pretrained":
+        newArgs = ["./src/train.py",  "--base_lr",  "1e0"
+                    "--batch_size", "64", "--epochs", "80", 
+                    "--weight_decay", "1e-5"]
+
+        # Step 1 from readme (fine tuning)
+        get_conv.main()
+        train.main(newArgs)
+
+        newArgs = ["--base_lr 1e-2", "--batch_size", "64", 
+                   "--epochs", "80", "--weight_decay","1e-5", 
+                   "--pretrained", "bcnn_fc_epoch_.pth"]
+
+        # Step 2 (fine tuning all layers)
+        train.main(newArgs)
 
 if __name__ == "__main__":
     main()
