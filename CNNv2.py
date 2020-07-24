@@ -129,11 +129,33 @@ class CNNBackup2(nn.Module):
     def __init__(self):
         super(CNNBackup2, self).__init__()
         
+        self.cnn_layers = Sequential(
+            #Defining a 2D conv layer
+            Conv2d(1, 4, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(4),
+            ReLU(inplace=True),
+            MaxPool2d(kernel_size=2, stride=2),
+            #Defining another 2D conv layer
+            Conv2d(4, 4, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(4),
+            ReLU(inplace=True),
+            MaxPool2d(kernel_size=2, stride=2),
+        )
+        self.linear_layers = Sequential(
+            Linear (4 * 7 * 7, * 10)
+        )
     
-    
+    # Forward Pass
+    def forward(self, w):
+        w = self.cnn_layers(w)
+        w = w.view(w.size(0), -1)
+        w = self.linear_layers(w)
+        return w
+
     
 CNN1 = CNN()
 CNN2 = CNNBackup()
+CNN3 = CNNBackup2()
 print("Model created!")
 
 # optimizer
