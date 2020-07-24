@@ -142,7 +142,9 @@ class CNNBackup2(nn.Module):
             MaxPool2d(kernel_size=2, stride=2),
         )
         self.linear_layers = Sequential(
-            Linear (4 * 7 * 7, * 10)
+            Linear (55 * 55 * 64, * 1000)
+            Linear (1000, 500)
+            Linear (500, 2)
         )
     
     # Forward Pass
@@ -152,6 +154,15 @@ class CNNBackup2(nn.Module):
         w = self.linear_layers(w)
         return w
 
+# another possible backup
+#class CNNBackup3(nn.Module):
+#    def __init__(self):
+#        super(CNNBackup3, self).__init__()
+#        self.conv1 = nn.Conv2d(3, 6, 5)
+#        self.pool = nn.MaxPool2d(2, 2)
+#        self.conv2 = nn.Conv2d(6, 16, 5)
+
+    
     
 CNN1 = CNN()
 CNN2 = CNNBackup()
