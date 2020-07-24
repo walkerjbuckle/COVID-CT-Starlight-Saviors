@@ -5,18 +5,27 @@
 import argparse
 import sys
 
+import importlib
+main_moco_loader = importlib.util.find_spec("main_moco")
+main_moco_found = main_moco_loader is not None
 
-try:
+blinear_loader_1 = importlib.util.find_spec("get_conv")
+blinear_loader_2 = importlib.util.find_spec("get_conv")
+
+bl1_found = blinear_loader_1 is not None
+bl2_found = blinear_loader_2 is not None
+
+if main_moco_found:
     import main_moco
-except ImportError:
-    pass
 
-
-try:
-    import get_conv.py
+elif bl1_found and bl2_found:
+    import get_conv
     import train
-except ImportError:
-    pass
+
+# try:
+    
+# except ImportError:
+#     pass
 
 """
 Training API for tested models
@@ -112,7 +121,7 @@ args = parser.parse_args()
 
 def main():
 
-    if args.train_script == "main_moco.py":
+    if main_moco_found and args.train_script == "main_moco.py":
         
         newArgs = []
         for arg in vars(args):
@@ -127,7 +136,9 @@ def main():
         main_moco.main(newArgs)
 
     
-    elif args.train_script == "blinear-cnn-pretrained":
+    elif bl1_found and bl2_found and \
+         args.train_script == "blinear-cnn-pretrained":
+         
         newArgs = ["./src/train.py",  "--base_lr",  "1e0"
                     "--batch_size", "64", "--epochs", "80", 
                     "--weight_decay", "1e-5"]
