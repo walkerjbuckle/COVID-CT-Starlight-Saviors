@@ -201,7 +201,7 @@ class BCNNManager(object):
         return 100 * num_correct / num_total
 
 
-def main():
+def main(args = None):
     """The main function."""
     import argparse
     parser = argparse.ArgumentParser(
@@ -216,7 +216,7 @@ def main():
                         required=True, help='Weight decay.')
     parser.add_argument('--pretrained', dest='pretrained', type=str,
                         required=False, help='Pre-trained model.')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     if args.base_lr <= 0:
         raise AttributeError('--base_lr parameter must >0.')
     if args.batch_size <= 0:
