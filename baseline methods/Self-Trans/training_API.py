@@ -39,7 +39,7 @@ parser.add_argument('--train-script', '--ts', default="main_moco.py",
                     help='Name of python file to run for training')
 
 
-parser.add_argument('--data',  default='../../Images-Processed', type=str,
+parser.add_argument('--data',  default='../../Images-processed', type=str,
                     help='path to dataset')
 parser.add_argument('-a', '--arch', default='densenet169',type=str,
                     choices=model_names,
