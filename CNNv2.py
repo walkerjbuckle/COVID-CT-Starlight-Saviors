@@ -153,15 +153,6 @@ class CNNBackup2(nn.Module):
         w = w.view(w.size(0), -1)
         w = self.linear_layers(w)
         return w
-
-# another possible backup
-#class CNNBackup3(nn.Module):
-#    def __init__(self):
-#        super(CNNBackup3, self).__init__()
-#        self.conv1 = nn.Conv2d(3, 6, 5)
-#        self.pool = nn.MaxPool2d(2, 2)
-#        self.conv2 = nn.Conv2d(6, 16, 5)
-
     
     
 CNN1 = CNN()
