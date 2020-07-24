@@ -124,7 +124,14 @@ class CNNBackup(nn.Module):
         out = self.fc2(out)
         return out
 
-
+#another possible backup
+class CNNBackup2(nn.Module):
+    def __init__(self):
+        super(CNNBackup2, self).__init__()
+        
+    
+    
+    
 CNN1 = CNN()
 CNN2 = CNNBackup()
 print("Model created!")
