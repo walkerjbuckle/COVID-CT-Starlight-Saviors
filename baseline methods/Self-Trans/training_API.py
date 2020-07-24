@@ -22,13 +22,21 @@ elif bl1_found and bl2_found:
     import get_conv
     import train
 
-# try:
-    
-# except ImportError:
-#     pass
 
 """
-Training API for tested models
+Training API for ther researcher's model, and team 6's model.
+
+Note: This does not include the fine tuning for the researcher's models. This can
+be done through the use of CT-predict-pretain.py after running this script.
+
+To use, place in the same folder as the model you want to run and specify
+which model you want to use
+
+to run Self-Trans training: 
+    python training_API.py 
+
+to run team 6's model: 
+    python training_API.py --train-script blinear-cnn-pretrained
 """
 model_names = {
         # Model from original authors
