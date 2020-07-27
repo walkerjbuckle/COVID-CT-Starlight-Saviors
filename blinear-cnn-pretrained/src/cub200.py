@@ -154,7 +154,7 @@ class CUB200(torch.utils.data.Dataset):
 
         # Downloads file.
         fpath = os.path.join(self._root, 'raw/CUB_200_2011.tgz')
-        try:
+        """try:
             print('Downloading ' + url + ' to ' + fpath)
             six.moves.urllib.request.urlretrieve(url, fpath)
         except six.moves.urllib.error.URLError:
@@ -162,7 +162,7 @@ class CUB200(torch.utils.data.Dataset):
                 self._url = self._url.replace('https:', 'http:')
                 print('Failed download. Trying https -> http instead.')
                 print('Downloading ' + url + ' to ' + fpath)
-                six.moves.urllib.request.urlretrieve(url, fpath)
+                six.moves.urllib.request.urlretrieve(url, fpath)"""
 
         # Extract file.
         cwd = os.getcwd()
