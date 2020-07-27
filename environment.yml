@@ -1,4 +1,4 @@
-name: base
+name: starlight
 channels:
   - conda-forge
   - pytorch

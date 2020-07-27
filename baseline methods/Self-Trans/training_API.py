@@ -32,19 +32,19 @@ be done through the use of CT-predict-pretain.py after running this script.
 To use, place in the same folder as the model you want to run and specify
 which model you want to use
 
-to run Self-Trans training: 
-    python training_API.py 
+to run Self-Trans training:
+    python training_API.py
 
-to run team 6's model: 
+to run team 6's model:
     python training_API.py --train-script blinear-cnn-pretrained
 """
 model_names = {
-        # Model from original authors
-        #"Dense169_self_trans":  models.densenet169(pretrained=True),
+    # Model from original authors
+    # "Dense169_self_trans":  models.densenet169(pretrained=True),
 
-        # Model from Team6
-        "blinear-cnn-pretrained": "blinear-cnn-pretrained file path"
-    }
+    # Model from Team6
+    "blinear-cnn-pretrained": "blinear-cnn-pretrained file path"
+}
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -55,11 +55,11 @@ parser.add_argument('--train-script', '--ts', default="main_moco.py",
 
 parser.add_argument('--data',  default='../../Images-processed', type=str,
                     help='path to dataset')
-parser.add_argument('-a', '--arch', default='densenet169',type=str,
+parser.add_argument('-a', '--arch', default='densenet169', type=str,
                     choices=model_names,
                     help='model architecture: ' +
-                        ' | '.join(model_names) +
-                        ' (default: resnet50)')
+                    ' | '.join(model_names) +
+                    ' (default: resnet50)')
 parser.add_argument('-j', '--workers', default=32, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
 parser.add_argument('--epochs', default=1000, type=int, metavar='N',
@@ -100,8 +100,8 @@ parser.add_argument('--multiprocessing-distributed', default=True,
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
 
-parser.add_argument('--save-epoch',default=40,type=int)
-parser.add_argument('--save-path',default='Self-Trans',type=str)
+parser.add_argument('--save-epoch', default=40, type=int)
+parser.add_argument('--save-path', default='Self-Trans', type=str)
 
 # moco specific configs:
 parser.add_argument('--moco-dim', default=128, type=int,
@@ -127,7 +127,7 @@ args = parser.parse_args()
 def main():
 
     if main_moco_found and args.train_script == "main_moco.py":
-        
+
         newArgs = []
         for arg in vars(args):
             if arg != "train_script":
@@ -140,24 +140,24 @@ def main():
 
         main_moco.main(newArgs)
 
-    
     elif bl1_found and bl2_found and \
-         args.train_script == "blinear-cnn-pretrained":
-         
+            args.train_script == "blinear-cnn-pretrained":
+
         newArgs = ["./src/train.py",  "--base_lr",  "1e0"
-                    "--batch_size", "64", "--epochs", "80", 
-                    "--weight_decay", "1e-5"]
+                   "--batch_size", "64", "--epochs", "80",
+                   "--weight_decay", "1e-5"]
 
         # Step 1 from readme (fine tuning)
         get_conv.main()
         train.main(newArgs)
 
-        newArgs = ["--base_lr 1e-2", "--batch_size", "64", 
-                   "--epochs", "80", "--weight_decay","1e-5", 
+        newArgs = ["--base_lr 1e-2", "--batch_size", "64",
+                   "--epochs", "80", "--weight_decay", "1e-5",
                    "--pretrained", "bcnn_fc_epoch_.pth"]
 
         # Step 2 (fine tuning all layers)
         train.main(newArgs)
+
 
 if __name__ == "__main__":
     main()

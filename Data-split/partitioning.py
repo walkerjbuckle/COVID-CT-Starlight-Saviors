@@ -15,6 +15,7 @@ import shutil
 import random
 import argparse
 
+
 def standardizeTextFile(textFile):
     """
     Parameters:
@@ -23,7 +24,7 @@ def standardizeTextFile(textFile):
         this function should be run on all six Data-split text files to make sure that the end with a newline character
         returns nothing
     """
-    
+
     text = open(textFile, 'r')
     words = text.read()
 
@@ -45,9 +46,9 @@ def getGroupSize(textFile):
     Purpose:
         this counts how many lines of text are in a text file
         it is useful for counting how many images are loaded into the dataset already
-        returns an integer for the number of lines 
+        returns an integer for the number of lines
     """
-    
+
     scans = 0
     text = open(textFile, 'r')
     words = text.read()
@@ -58,6 +59,7 @@ def getGroupSize(textFile):
 
     text.close()
     return(scans)
+
 
 def randomlyAssign(numSelecting, imgList, textFilename, startPath, endPath):
     """
@@ -74,7 +76,7 @@ def randomlyAssign(numSelecting, imgList, textFilename, startPath, endPath):
         generates a text file called temp.txt that can be deleted
         returns nothing
     """
-    
+
     tempText = open('temp.txt', 'w+')
     # temp.txt ins't a necessary file, I just wanted to edit the files in Data-split as few times as possible
     for image in range(0, numSelecting):
@@ -91,7 +93,8 @@ def randomlyAssign(numSelecting, imgList, textFilename, startPath, endPath):
 
     textFile.close()
     tempText.close()
-    
+
+
 def checkImgCounts(counts, totalCovid, totalNonCovid):
     """
     Parameters:
@@ -104,17 +107,17 @@ def checkImgCounts(counts, totalCovid, totalNonCovid):
         returns a list containing the updated counts in the order:
             [trainCOVID, valCOVID, testCOVID, trainNONCOVID, valNONCOVID, testNONCOVID]
     """
-    
+
     covidCount = counts[0] + counts[1] + counts[2]
     nonCovidCount = counts[3] + counts[4] + counts[5]
-    
+
     # these are the differences of the images the program wants and the actual amount
     # for example, a value of 3 means that the program is looking for 3 more scans than we have
     extraCovid = covidCount - totalCovid
     extraNonCovid = nonCovidCount - totalNonCovid
 
     # explanation of what is happening here because it looks bad but this was the best working version I had:
-    
+
     # first, the outer if statement is finding out if the current splits require more images than exist
     # to resolve this issue, this will try to remove the same amount of images from each group
     # this number of images removed from each group is extraCovid // 3 or extraNonCovid // 3
@@ -154,12 +157,12 @@ def checkImgCounts(counts, totalCovid, totalNonCovid):
             counts[0] += abs(extraCovid) // 3 + 1
             counts[1] += abs(extraCovid) // 3
             counts[2] += abs(extraCovid) // 3 + 1
-    
+
     # corrections for noncovid splits
     if(extraNonCovid > 0):
         if(extraNonCovid % 3 == 0):
             counts[3] -= extraNonCovid // 3
-            counts[4] -= extraNonCovid // 3 
+            counts[4] -= extraNonCovid // 3
             counts[5] -= extraNonCovid // 3
         elif(extraNonCovid % 3 == 1):
             counts[3] -= extraNonCovid // 3 + 1
@@ -185,10 +188,12 @@ def checkImgCounts(counts, totalCovid, totalNonCovid):
 
     return counts
 
+
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="Load in a dataset from two folders")
-    
+    parser = argparse.ArgumentParser(
+        description="Load in a dataset from two folders")
+
     parser.add_argument('--c', default='../../../../Downloads/615374_1199870_bundle_archive/COVID',
                         help='File path for directory of COVID images from {}'.format(os.getcwd()))
 
@@ -204,7 +209,7 @@ if __name__ == '__main__':
     # creates lists containg all of the image filenames
     covidList = os.listdir(covidPath)
     nonCovidList = os.listdir(nonCovidPath)
-    
+
     # the proportion of images in each group
     trainProp = 425.0 / 746
     valProp = 118.0 / 746
@@ -212,9 +217,9 @@ if __name__ == '__main__':
 
     # finds the total amount of images after the datasets are merged
     totalImages = len(os.listdir('../Images-processed/CT_COVID')) \
-                  + len(os.listdir('../Images-processed/CT_NonCOVID')) \
-                  + len(covidList) \
-                  + len(nonCovidList)
+        + len(os.listdir('../Images-processed/CT_NonCOVID')) \
+        + len(covidList) \
+        + len(nonCovidList)
 
     # finds the total amount of images in the dataset to be loaded in
     totalNewImages = len(covidList) + len(nonCovidList)
@@ -237,20 +242,27 @@ if __name__ == '__main__':
     standardizeTextFile('NonCOVID/testCT_NonCOVID.txt')
 
     # this need to be subtracting the number of lines in the text document, removing the old images from the counts
-    trainSize -= getGroupSize('COVID/trainCT_COVID.txt') + getGroupSize('NonCOVID/trainCT_NonCOVID.txt')
-    valSize -= getGroupSize('COVID/valCT_COVID.txt') + getGroupSize('NonCOVID/valCT_NonCOVID.txt')
-    testSize -= getGroupSize('COVID/testCT_COVID.txt') + getGroupSize('NonCOVID/testCT_NonCOVID.txt')
+    trainSize -= getGroupSize('COVID/trainCT_COVID.txt') + \
+        getGroupSize('NonCOVID/trainCT_NonCOVID.txt')
+    valSize -= getGroupSize('COVID/valCT_COVID.txt') + \
+        getGroupSize('NonCOVID/valCT_NonCOVID.txt')
+    testSize -= getGroupSize('COVID/testCT_COVID.txt') + \
+        getGroupSize('NonCOVID/testCT_NonCOVID.txt')
 
     # these variables are the number of scans from either covid or noncovid that need to be added to each group
-    trainNewCovid = int( trainSize/float(totalNewImages) * len(covidList) + 0.5)
-    trainNewNonCovid = int( trainSize/float(totalNewImages) * len(nonCovidList) + 0.5)
-    valNewCovid = int( valSize/float(totalNewImages) * len(covidList) + 0.5)
-    valNewNonCovid = int( valSize/float(totalNewImages) * len(nonCovidList) + 0.5)
-    testNewCovid = int( testSize/float(totalNewImages) * len(covidList) + 0.5)
-    testNewNonCovid = int( testSize/float(totalNewImages) * len(nonCovidList) + 0.5)
+    trainNewCovid = int(trainSize/float(totalNewImages) * len(covidList) + 0.5)
+    trainNewNonCovid = int(trainSize/float(totalNewImages)
+                           * len(nonCovidList) + 0.5)
+    valNewCovid = int(valSize/float(totalNewImages) * len(covidList) + 0.5)
+    valNewNonCovid = int(valSize/float(totalNewImages)
+                         * len(nonCovidList) + 0.5)
+    testNewCovid = int(testSize/float(totalNewImages) * len(covidList) + 0.5)
+    testNewNonCovid = int(testSize/float(totalNewImages)
+                          * len(nonCovidList) + 0.5)
 
     # this checks to see that we are using all of the images in the new dataset
-    newCounts = checkImgCounts([trainNewCovid, valNewCovid, testNewCovid, trainNewNonCovid, valNewNonCovid, testNewNonCovid], len(covidList), len(nonCovidList))
+    newCounts = checkImgCounts([trainNewCovid, valNewCovid, testNewCovid, trainNewNonCovid,
+                                valNewNonCovid, testNewNonCovid], len(covidList), len(nonCovidList))
     trainNewCovid = newCounts[0]
     valNewCovid = newCounts[1]
     testNewCovid = newCounts[2]
@@ -259,9 +271,15 @@ if __name__ == '__main__':
     testNewNonCovid = newCounts[5]
 
     # this is now where we randomly assign the scans to groups
-    randomlyAssign(trainNewCovid, covidList, 'COVID/trainCT_COVID.txt', covidPath, 'CT_COVID')
-    randomlyAssign(valNewCovid, covidList, 'COVID/valCT_COVID.txt', covidPath, 'CT_COVID')
-    randomlyAssign(testNewCovid, covidList, 'COVID/testCT_COVID.txt', covidPath, 'CT_COVID')
-    randomlyAssign(trainNewNonCovid, nonCovidList, 'NonCOVID/trainCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
-    randomlyAssign(valNewNonCovid, nonCovidList, 'NonCOVID/valCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
-    randomlyAssign(testNewNonCovid, nonCovidList, 'NonCOVID/testCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
+    randomlyAssign(trainNewCovid, covidList,
+                   'COVID/trainCT_COVID.txt', covidPath, 'CT_COVID')
+    randomlyAssign(valNewCovid, covidList,
+                   'COVID/valCT_COVID.txt', covidPath, 'CT_COVID')
+    randomlyAssign(testNewCovid, covidList,
+                   'COVID/testCT_COVID.txt', covidPath, 'CT_COVID')
+    randomlyAssign(trainNewNonCovid, nonCovidList,
+                   'NonCOVID/trainCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
+    randomlyAssign(valNewNonCovid, nonCovidList,
+                   'NonCOVID/valCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
+    randomlyAssign(testNewNonCovid, nonCovidList,
+                   'NonCOVID/testCT_NonCOVID.txt', nonCovidPath, 'CT_NonCOVID')
