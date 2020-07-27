@@ -136,7 +136,7 @@ class BCNNManager(object):
             ])
 
             print(os.getcwd())
-            os.chdir('../../')
+            os.chdir('../')
             print(os.getcwd())
             
             with zipfile.ZipFile('Images-processed/CT_COVID.zip', 'r') as zip_ref:
