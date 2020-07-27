@@ -34,6 +34,7 @@ import torchvision.models as models
 import argparse
 
 
+torch.cuda.empty_cache()
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -45,7 +46,6 @@ parser.add_argument('-b', '--batch-size', default=64, type=int,
                     help='mini-batch size (default: 64), this is the total '
                          'batch size of all GPUs on the current node when '
                          'using Data Parallel or Distributed Data Parallel')
-
 
 
 parser.add_argument('--train-root', default='../../Images-processed',
@@ -70,35 +70,25 @@ parser.add_argument('--data-split', default='../../Data-split',
                                 valCT_NonCOVID.txt""")
 
 
-
 parser.add_argument('--save-dir', default='model_backup',
                     help='Directory for storing saved model when finished. Must already exist.')
 
 
-parser.add_argument('--model-path', default='Self-Trans.pt',
-                    help='File path for model to be tested')
-
-parser.add_argument('--model-name', default="Dense169_self_trans",
-                    help='Name of model for fine tuning, must be in model_names dict')
-
-parser.add_argument('--epoch', default=20, type=int,
-                    help='Number of epochs to run for testing.')
-
 args = parser.parse_args()
 batchsize = args.batch_size
-
-torch.cuda.empty_cache()
 
 alpha = None
 # alpha is None if mixup is not used
 alpha_name = f'{alpha}'
 device = 'cuda'
 
+
 def read_txt(txt_path):
     with open(txt_path) as f:
         lines = f.readlines()
     txt_data = [line.strip() for line in lines]
     return txt_data
+
 
 class CovidCTDataset(Dataset):
     def __init__(self, root_dir, txt_COVID, txt_NonCOVID, transform=None):
@@ -120,12 +110,13 @@ class CovidCTDataset(Dataset):
                 - ......
         """
         self.root_dir = root_dir
-        self.txt_path = [txt_COVID,txt_NonCOVID]
+        self.txt_path = [txt_COVID, txt_NonCOVID]
         self.classes = ['CT_COVID', 'CT_NonCOVID']
         self.num_cls = len(self.classes)
         self.img_list = []
         for c in range(self.num_cls):
-            cls_list = [[os.path.join(self.root_dir,self.classes[c],item), c] for item in read_txt(self.txt_path[c])]
+            cls_list = [[os.path.join(self.root_dir, self.classes[c], item), c]
+                        for item in read_txt(self.txt_path[c])]
             self.img_list += cls_list
         self.transform = transform
 
@@ -145,6 +136,8 @@ class CovidCTDataset(Dataset):
                   'label': int(self.img_list[idx][1])}
         return sample
 
+# training process is defined here #####################################################################################
+
 
 def train(optimizer, epoch):
     model.train()
@@ -155,13 +148,23 @@ def train(optimizer, epoch):
     for batch_index, batch_samples in enumerate(train_loader):
 
         # move data to device
-        data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
+        data, target = batch_samples['img'].to(
+            device), batch_samples['label'].to(device)
 
+        # adjust data to meet the input dimension of model
+        #         data = data[:, 0, :, :]
+        #         data = data[:, None, :, :]
+
+        # mixup
+        #         data, targets_a, targets_b, lam = mixup_data(data, target, alpha, use_cuda=True)
 
         optimizer.zero_grad()
         output = model(data)
         criteria = nn.CrossEntropyLoss()
         loss = criteria(output, target.long())
+
+        # mixup loss
+        #         loss = mixup_criterion(criteria, output, targets_a, targets_b, lam)
 
         train_loss += criteria(output, target.long())
 
@@ -179,31 +182,58 @@ def train(optimizer, epoch):
                 100.0 * batch_index / len(train_loader), loss.item() / bs))
 
 
+#     print('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+#         train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
+#         100.0 * train_correct / len(train_loader.dataset)))
+#     f = open('model_result/{}.txt'.format(modelname), 'a+')
+#     f.write('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+#         train_loss/len(train_loader.dataset), train_correct, len(train_loader.dataset),
+#         100.0 * train_correct / len(train_loader.dataset)))
+#     f.write('\n')
+#     f.close()
+# training process definition ends  here ################################################################################
+
+
+# val process is defined here ###########################################################################################
+
 def val(epoch):
     model.eval()
     test_loss = 0
     correct = 0
+    results = []
 
+    TP = 0
+    TN = 0
+    FN = 0
+    FP = 0
 
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
+        tpr_list = []
+        fpr_list = []
 
         predlist = []
         scorelist = []
         targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(val_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
+            data, target = batch_samples['img'].to(
+                device), batch_samples['label'].to(device)
 
+            #             data = data[:, 0, :, :]
+            #             data = data[:, None, :, :]
             output = model(data)
 
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-
+            #             print('target',target.long()[:, 2].view_as(pred))
             correct += pred.eq(target.long().view_as(pred)).sum().item()
 
+            #             print(output[:,1].cpu().numpy())
+            #             print((output[:,1]+output[:,0]).cpu().numpy())
+            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
             targetcpu = target.long().cpu().numpy()
             predlist = np.append(predlist, pred.cpu().numpy())
             scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
@@ -211,6 +241,13 @@ def val(epoch):
 
     return targetlist, scorelist, predlist
 
+    # Write to tensorboard
+#     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
+
+# val process definition ends here ######################################################################################
+
+
+# test process is defined here ##########################################################################################
 
 def test(epoch):
     model.eval()
@@ -218,59 +255,82 @@ def test(epoch):
     correct = 0
     results = []
 
+    TP = 0
+    TN = 0
+    FN = 0
+    FP = 0
+
     criteria = nn.CrossEntropyLoss()
     # Don't update model
     with torch.no_grad():
+        tpr_list = []
+        fpr_list = []
 
         predlist = []
         scorelist = []
         targetlist = []
         # Predict
         for batch_index, batch_samples in enumerate(test_loader):
-            data, target = batch_samples['img'].to(device), batch_samples['label'].to(device)
-
+            data, target = batch_samples['img'].to(
+                device), batch_samples['label'].to(device)
+            #             data = data[:, 0, :, :]
+            #             data = data[:, None, :, :]
+            #             print(target)
             output = model(data)
 
             test_loss += criteria(output, target.long())
             score = F.softmax(output, dim=1)
             pred = output.argmax(dim=1, keepdim=True)
-
+            #             print('target',target.long()[:, 2].view_as(pred))
             correct += pred.eq(target.long().view_as(pred)).sum().item()
+            #             TP += ((pred == 1) & (target.long()[:, 2].view_as(pred).data == 1)).cpu().sum()
+            #             TN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
+            # #             # FN    predict 0 label 1
+            #             FN += ((pred == 0) & (target.long()[:, 2].view_as(pred) == 1)).cpu().sum()
+            # #             # FP    predict 1 label 0
+            #             FP += ((pred == 1) & (target.long()[:, 2].view_as(pred) == 0)).cpu().sum()
+            #             print(TP,TN,FN,FP)
 
+            #             print(output[:,1].cpu().numpy())
+            #             print((output[:,1]+output[:,0]).cpu().numpy())
+            #             predcpu=(output[:,1].cpu().numpy())/((output[:,1]+output[:,0]).cpu().numpy())
             targetcpu = target.long().cpu().numpy()
             predlist = np.append(predlist, pred.cpu().numpy())
             scorelist = np.append(scorelist, score.cpu().numpy()[:, 1])
             targetlist = np.append(targetlist, targetcpu)
     return targetlist, scorelist, predlist
 
+    # Write to tensorboard
+#     writer.add_scalar('Test Accuracy', 100.0 * correct / len(test_loader.dataset), epoch)
 
-def save_trained_model(model, modelname, alpha_name):
+# test process definition ends here #####################################################################################
+
+
+def save_trained_model(model):
 
     path = os.path.join(os.getcwd(), args.save_dir)
     try:
         os.mkdir(path)
     except FileExistsError:
-        print("\nModel saved in a preexisting directory: %s" % path)
+        print("Found save directory already present")
+    except:
+        sys.exit("Failed to create save directory")
+    else:
         torch.save(model.state_dict(),
                    "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
-    except:
-        sys.exit("\nFailed to create save directory")
-    else:
-        print("\nModel saved in new directory: %s" % path)
-        torch.save(model.state_dict(),
-                "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
-
+    return
 
 
 if __name__ == '__main__':
 
-    ########## Mean and std are calculated from the train dataset
+    # Mean and std are calculated from the train dataset
     normalize = transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                      std=[0.33165374, 0.33165374, 0.33165374])
     train_transformer = transforms.Compose([
         transforms.Resize(256),
         transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
         transforms.RandomHorizontalFlip(),
+        #     transforms.RandomRotation(90),
         # random brightness and random contrast
         transforms.ColorJitter(brightness=0.2, contrast=0.2),
         transforms.ToTensor(),
@@ -278,7 +338,8 @@ if __name__ == '__main__':
     ])
 
     val_transformer = transforms.Compose([
-
+        #     transforms.Resize(224),
+        #     transforms.CenterCrop(224),
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         normalize
@@ -292,55 +353,50 @@ if __name__ == '__main__':
         normalize
     ])
 
-
     train_root_path = args.train_root
     val_root_path = args.val_root
     test_root_path = args.test_root
 
     data_split_path = args.data_split
 
-
-    trainset = CovidCTDataset(root_dir = train_root_path,
-                                  txt_COVID = data_split_path + '/COVID/trainCT_COVID.txt',
-                                  txt_NonCOVID = data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
-                                  transform=train_transformer)
+    trainset = CovidCTDataset(root_dir=train_root_path,
+                              txt_COVID=data_split_path + '/COVID/trainCT_COVID.txt',
+                              txt_NonCOVID=data_split_path + '/NonCOVID/trainCT_NonCOVID.txt',
+                              transform=train_transformer)
     valset = CovidCTDataset(root_dir=val_root_path,
-                            txt_COVID = data_split_path + '/COVID/valCT_COVID.txt',
-                            txt_NonCOVID = data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
+                            txt_COVID=data_split_path + '/COVID/valCT_COVID.txt',
+                            txt_NonCOVID=data_split_path + '/NonCOVID/valCT_NonCOVID.txt',
                             transform=val_transformer)
     testset = CovidCTDataset(root_dir=test_root_path,
-                             txt_COVID = data_split_path + '/COVID/testCT_COVID.txt',
-                             txt_NonCOVID = data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
+                             txt_COVID=data_split_path + '/COVID/testCT_COVID.txt',
+                             txt_NonCOVID=data_split_path + '/NonCOVID/testCT_NonCOVID.txt',
                              transform=val_transformer)
 
     print("Training set length: %d" % trainset.__len__())
     print("Validation set length: %d" % valset.__len__())
-    print("Testing set length: %d " %testset.__len__())
+    print("Testing set length: %d " % testset.__len__())
 
-    train_loader = DataLoader(trainset, batch_size=batchsize, drop_last=False, shuffle=True)
-    val_loader = DataLoader(valset, batch_size=batchsize, drop_last=False, shuffle=False)
-    test_loader = DataLoader(testset, batch_size=batchsize, drop_last=False, shuffle=False)
+    train_loader = DataLoader(
+        trainset, batch_size=batchsize, drop_last=False, shuffle=True)
+    val_loader = DataLoader(valset, batch_size=batchsize,
+                            drop_last=False, shuffle=False)
+    test_loader = DataLoader(
+        testset, batch_size=batchsize, drop_last=False, shuffle=False)
 
     for batch_index, batch_samples in enumerate(train_loader):
         data, target = batch_samples['img'], batch_samples['label']
     skimage.io.imshow(data[0, 1, :, :].numpy())
 
-
     """Load Self-Trans model"""
     """Change names and locations to the Self-Trans.pt"""
-
-    if torch.cuda.is_available():
-        model = models.densenet169(pretrained=True).cuda()
-    else:
-        model = models.densenet169(pretrained=True)
-
-
-    pretrained_net = torch.load(args.model_path)
+    model = models.densenet169(pretrained=True).cuda()
+    # pretrained_net = torch.load('model_backup/Dense169.pt')
+    # pretrained_net = torch.load('model_backup/mixup/Dense169_0.6.pt')
+    pretrained_net = torch.load('Self-Trans.pt')
     model.load_state_dict(pretrained_net)
-    modelname = args.model_name
-####
+    modelname = 'Dense169_ssl_luna_moco'
 
-     # train
+    # train
     bs = batchsize
     votenum = 10
     import warnings
@@ -357,14 +413,15 @@ if __name__ == '__main__':
     vote_pred = np.zeros(valset.__len__())
     vote_score = np.zeros(valset.__len__())
 
-
+    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum = 0.9)
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
+    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.95)
 
     scheduler = StepLR(optimizer, step_size=1)
 
-    total_epoch = args.epoch
+    total_epoch = 20
     for epoch in range(1, total_epoch + 1):
         train(optimizer, epoch)
 
@@ -403,8 +460,12 @@ if __name__ == '__main__':
             print('AUCp', roc_auc_score(targetlist, vote_pred))
             print('AUC', AUC)
 
+            #         if epoch == total_epoch:
 
-            save_trained_model(model, modelname, alpha_name)
+            save_trained_model(model)
+
+            # torch.save(model.state_dict(),
+            #            "{}/{}_{}_covid_moco_covid.pt".format(args.save_dir, modelname, alpha_name))
 
             vote_pred = np.zeros(valset.__len__())
             vote_score = np.zeros(valset.__len__())
@@ -412,6 +473,11 @@ if __name__ == '__main__':
                 '\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
                     epoch, r, p, F1, acc, AUC))
 
+    #         f = open('model_result/medical_transfer/{}_{}.txt'.format(modelname,alpha_name), 'a+')
+    #         f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
+    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
+    #         epoch, r, p, F1, acc, AUC))
+    #         f.close()
 
     # test
     bs = 10
@@ -423,7 +489,10 @@ if __name__ == '__main__':
     p_list = []
     acc_list = []
     AUC_list = []
-
+    # TP = 0
+    # TN = 0
+    # FN = 0
+    # FP = 0
     vote_pred = np.zeros(testset.__len__())
     vote_score = np.zeros(testset.__len__())
 
@@ -454,3 +523,9 @@ if __name__ == '__main__':
     AUC = roc_auc_score(targetlist, vote_score)
     print('AUC', AUC)
 
+    # f = open(f'model_result/medical_transfer/test_{modelname}_{alpha_name}_LUNA_moco_CT_moco.txt', 'a+')
+    # f.write('\n The epoch is {}, average recall: {:.4f}, average precision: {:.4f},\
+    # average F1: {:.4f}, average accuracy: {:.4f}, average AUC: {:.4f}'.format(
+    # epoch, r, p, F1, acc, AUC))
+    # f.close()
+    # torch.save(model.state_dict(), "model_backup/medical_transfer/{}_{}_covid_moco_covid.pt".format(modelname,alpha_name))

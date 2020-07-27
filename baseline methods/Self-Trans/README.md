@@ -1,8 +1,8 @@
-# Self-Trans 
+# Self-Trans
 
 
 **We provide our current best model `Self-Trans` in this repo**
- 
+
 ### Environment
 The code is based on Python 3.7 and PyTorch 1.3
 
@@ -10,17 +10,17 @@ The MoCO code is run on four GTX1080Ti with batch size 128. The pretrained model
 
 
 ### Dataset
-Use the split in `Data-split`. 
-To generate the dataset for training and testing, 
+Use the split in `Data-split`.
+To generate the dataset for training and testing,
 1. Download images from repo `Images-processed`
 2. Download txt files for image names in train, val, and test set from `Data-split` repo
 3. Use the dataloader defined in line [5] of the script `CT_predict-efficient-pretrain.ipynb` and load the dataset
 
-The input image to the model will be (N, 224, 224, 3), for DenseNet this will be taken as the input, for some other models which require the input to have only 1 channel, you need to change the input data by setting 
+The input image to the model will be (N, 224, 224, 3), for DenseNet this will be taken as the input, for some other models which require the input to have only 1 channel, you need to change the input data by setting
 
        data = data[:, 0, :, :]
-       data = data[:, None, :, :] 
-       
+       data = data[:, None, :, :]
+
 in [8][9][10] for train, val, and test in the fine-tune script [CT-predict-pretrain.ipynb](CT-predict-pretrain.ipynb) (for our CT images, each channel is the same)
 
 ### How to train
@@ -54,7 +54,7 @@ See `Self-Trans.pt` with DenseNet-169 backbone.
 We provide an example notebook file `CT_predict-efficient-pretrain.ipynb`, the pretrained model is loaded in [30] . Change the name and path to our provided Self-Trans.pt to load it correctly. The model achieves an F1-score of 0.85 on the test set.
 
 
-### Reference 
+### Reference
 The details of this approach are described in this [preprint](https://www.medrxiv.org/content/10.1101/2020.04.13.20063941v1).
 
 If you find the code useful, please cite:
@@ -68,7 +68,3 @@ If you find the code useful, please cite:
     }
 
 The code of the MoCo part can refer to [https://github.com/facebookresearch/moco](https://github.com/facebookresearch/moco)
-
- 
-
-
