@@ -11,9 +11,11 @@ if __name__ == '__main__':
 
     covidMain = 'CT_COVID'
     nonCovidMain = 'CT_NonCOVID'
-    
-    covidZips = [zipfile.ZipFile('CT_COVID_1.zip', 'r'), zipfile.ZipFile('CT_COVID_2.zip', 'r')]
-    nonCovidZips = [zipfile.ZipFile('CT_NonCOVID_1.zip', 'r'), zipfile.ZipFile('CT_NonCOVID_2.zip', 'r')]
+
+    covidZips = [zipfile.ZipFile(
+        'CT_COVID_1.zip', 'r'), zipfile.ZipFile('CT_COVID_2.zip', 'r')]
+    nonCovidZips = [zipfile.ZipFile(
+        'CT_NonCOVID_1.zip', 'r'), zipfile.ZipFile('CT_NonCOVID_2.zip', 'r')]
 
     for file in covidZips:
         file.extractall(covidMain)
