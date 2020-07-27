@@ -130,28 +130,25 @@ class CNNBackup2(nn.Module):
         super(CNNBackup2, self).__init__()
         
         self.cnn_layers = Sequential(
-            #Defining a 2D conv layer
-            Conv2d(1, 4, kernel_size=3, stride=1, padding=1),
-            BatchNorm2d(4),
-            ReLU(inplace=True),
-            MaxPool2d(kernel_size=2, stride=2),
-            #Defining another 2D conv layer
-            Conv2d(4, 4, kernel_size=3, stride=1, padding=1),
-            BatchNorm2d(4),
-            ReLU(inplace=True),
-            MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.linear_layers = Sequential(
-            Linear (55 * 55 * 64, * 1000)
-            Linear (1000, 500)
-            Linear (500, 2)
+            self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+            self.pool = nn.MaxPool2d(2, 2)
+            self.conv2 = nn.Conv2d(32, 64, 3)
+            self.pool = nn.MaxPool2d(2, 2)
+            self.conv3 = nn.Conv2d(32, 64, 3)
+            self.fc1 = nn.Linear(55 * 55 * 64, 1000)
+            self.fc2 = nn.Linear(1000, 500)
+            self.fc3 = nn.Linear(500, 2)
         )
     
     # Forward Pass
     def forward(self, w):
-        w = self.cnn_layers(w)
-        w = w.view(w.size(0), -1)
-        w = self.linear_layers(w)
+        w = self.pool(f.relu(self.conv1(w))
+        w = self.pool(f.relu(self.conv2(w))
+        w = self.pool(f.relu(self.conv3(w))
+        w = w.view(-1, 55 * 55 * 64)
+        w = F.relu(self.fc1(w))
+        w = F.relu(self.fc2(w))
+        w = self.fc3
         return w
     
     
