@@ -294,9 +294,9 @@ class CovidCTDataset(torch.utils.data.Dataset):
 
         if self.transform:
             image = self.transform(image)
-        sample = {'img': image,
-                  'label': int(self.img_list[idx][1])}
-        return sample
+        """sample = {'img': image,
+                  'label': int(self.img_list[idx][1])}"""
+        return image, int(self.img_list[idx][1])
 
 
 def main(args = None):
