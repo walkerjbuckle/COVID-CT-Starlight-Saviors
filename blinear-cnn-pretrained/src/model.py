@@ -99,17 +99,18 @@ class BCNN(torch.nn.Module):
         # Input.
         N = X.size()[0]
         if self._is_all:
-            assert X.size() == (N, 3, 448, 448)
+            assert X.size() == (N, 3, 224, 224) #(N, 3, 448, 448)
             X = self.features(X)
-        assert X.size() == (N, 512, 28, 28)
+        size = X.size()
+        assert X.size() == (N, 512, 14, 14) #(N, 512, 28, 28)
 
         # The main branch.
         X = self.relu5_3(X)
-        assert X.size() == (N, 512, 28, 28)
+        assert X.size() == (N, 512, 14, 14)
 
         # Classical bilinear pooling.
-        X = torch.reshape(X, (N, 512, 28 * 28))
-        X = torch.bmm(X, torch.transpose(X, 1, 2)) / (28 * 28)
+        X = torch.reshape(X, (N, 512, 14 * 14))
+        X = torch.bmm(X, torch.transpose(X, 1, 2)) / (14 * 14)
         assert X.size() == (N, 512, 512)
         X = torch.reshape(X, (N, 512 * 512))
 
