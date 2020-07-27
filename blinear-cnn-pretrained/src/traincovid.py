@@ -65,7 +65,7 @@ class BCNNManager(object):
         self._paths = paths
 
         # Network.
-        """if self._paths['pretrained'] is not None:
+        if self._paths['pretrained'] is not None:
             self._net = torch.nn.DataParallel(
                 model.BCNN(num_classes=200, is_all=True)).cuda()
             self._net.load_state_dict(torch.load(self._paths['pretrained']),
@@ -82,7 +82,7 @@ class BCNNManager(object):
             momentum=0.9, weight_decay=self._options['weight_decay'])
         self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self._optimizer, mode='max', factor=0.1, patience=8, verbose=True,
-            threshold=1e-4)"""
+            threshold=1e-4)
 
         # Data.
         if self._paths['pretrained'] is not None:
