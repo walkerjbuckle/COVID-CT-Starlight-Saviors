@@ -42,9 +42,6 @@ model_names = {
         # Model from original authors
         #"Dense169_self_trans":  models.densenet169(pretrained=True),
 
-        # Moel from Team5
-        "team 5 model": "file path",
-
         # Model from Team6
         "blinear-cnn-pretrained": "blinear-cnn-pretrained file path"
     }
