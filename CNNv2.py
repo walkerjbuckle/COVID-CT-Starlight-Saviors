@@ -128,27 +128,24 @@ class CNNBackup(nn.Module):
 class CNNBackup2(nn.Module):
     def __init__(self):
         super(CNNBackup2, self).__init__()
-        
-        self.cnn_layers = Sequential(
-            self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
-            self.pool = nn.MaxPool2d(2, 2)
-            self.conv2 = nn.Conv2d(32, 64, 3)
-            self.pool = nn.MaxPool2d(2, 2)
-            self.conv3 = nn.Conv2d(32, 64, 3)
-            self.fc1 = nn.Linear(55 * 55 * 64, 1000)
-            self.fc2 = nn.Linear(1000, 500)
-            self.fc3 = nn.Linear(500, 2)
-        )
-    
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(32, 64, 3)
+        self.fc1 = nn.Linear(55 * 55 * 64, 1000)
+        self.fc2 = nn.Linear(1000, 500)
+        self.fc3 = nn.Linear(500, 250)
+        self.fc4 = nn.Linear(250, 2)
+
     # Forward Pass
     def forward(self, w):
         w = self.pool(f.relu(self.conv1(w))
         w = self.pool(f.relu(self.conv2(w))
-        w = self.pool(f.relu(self.conv3(w))
+
         w = w.view(-1, 55 * 55 * 64)
-        w = F.relu(self.fc1(w))
-        w = F.relu(self.fc2(w))
-        w = self.fc3
+        w = f.relu(self.fc1(w))
+        w = f.relu(self.fc2(w))
+        w = f.relu(self.fc3(w))
+        w = self.fc4(w)
         return w
     
     
@@ -219,6 +216,33 @@ def backupTrain():
                       .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
                               (correct / total) * 100))
 
+
+#for CNN3
+def backupTrain2(trainer):
+    for epoch in range(epochs):
+        for i, (images, labels) in enumerate(trainer):
+            images, labels = images.to(dev), labels.to(dev)
+            # Run the forward pass
+            outputs = CNN3(images)  # use either CCN1 or CNN2
+            loss = criterion(outputs, labels)
+            lossList.append(loss.item())
+
+            # Backprop and perform optimisation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Track the accuracy
+            stepTotal = labels.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            stepCorrect = (predicted == labels).sum().item()
+            accList.append(stepCorrect / stepTotal)
+
+            if (i + 1) % batchSize == 0:
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy this step: {:.2f}%'
+                      .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
+                          (stepCorrect / stepTotal) * 100))
+                      
 
 # use gpu if available
 if torch.cuda.is_available():
