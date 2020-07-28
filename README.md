@@ -17,7 +17,9 @@ Clone the repository
 git clone https://github.com/walkerjbuckle/COVID-CT-Starlight-Saviors.git
 ```
 Create an envirement (using environment.yml or requirements.txt)
+
 -Using Conda environment
+
 Requires Anaconda running python 3.7 or newer
 
 ```
@@ -33,7 +35,7 @@ pip install -r requiremennts.txt
 pip install torch torchvision
 ```
 
-Install git pre-commit hook
+Lastly, install git pre-commit hook
 
 ```
 cd COVID-CT-Starlight-Saviors
