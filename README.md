@@ -46,3 +46,6 @@ pre-commit run --all-files
 
 # Who are we?
 This project is being done by Interns as part of the [MISI Internship program](https://www.misiacademy.tech/). Interns divided into six teams in order to work on the project. Team 1 was responsible for the command line Linux app and a PyQt cross-platform GUI app. Team 2 was responsible for managing the Git repository, assisting other teams with it, and writing the README. Team 3 was responsible for adding datasets for training, making a script for partitioning the datasets and making an API for data loading. Team 4 was responsible for making an API for training and researching training options. Team 5 was responsible for researching the options for layers and making a new CNN class model. Team 6 was responsible for searching for possible models to apply with transfer learning that have not yet been tried, and to train and validate those models.
+
+# Docs folder
+The docs folder includes a written paper from each team about how they went about addressing their goals and needs, including any issues or mistakes made along the way. These documents also include the team members as authors for each team and any references needed. 
