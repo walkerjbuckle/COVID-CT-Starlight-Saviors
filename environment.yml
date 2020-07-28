@@ -54,7 +54,6 @@ dependencies:
   - conda-verify=3.1.1=py37hc8dfbb8_1001
   - contextlib2=0.6.0.post1=py_0
   - cryptography=2.8=py37h1ba5d50_0
-  - cudatoolkit=10.2.89=hfd86e86_1
   - curl=7.68.0=hbc83047_0
   - cycler=0.10.0=py37_0
   - cython=0.29.15=py37he6710b0_0
