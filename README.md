@@ -25,7 +25,7 @@ Requires Anaconda running python 3.7 or newer
 ```
 cd COVID-CT-Starlight-Saviors
 conda env create -f environment.yml
-conda activate starlightenv
+conda activate starlight
 ```
 
 -Using pip requirements.txt
