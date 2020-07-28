@@ -31,11 +31,12 @@ conda activate starlight
 -Using pip requirements.txt
 
 ```
-pip install -r requiremennts.txt
+cd COVID-CT-Starlight-Saviors
+pip install -r requirements.txt
 pip install torch torchvision
 ```
 
-Lastly, install git pre-commit hook
+# Contributors, please install git pre-commit hook
 
 ```
 cd COVID-CT-Starlight-Saviors
