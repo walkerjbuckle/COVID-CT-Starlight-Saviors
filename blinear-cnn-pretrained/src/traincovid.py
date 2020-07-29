@@ -265,8 +265,14 @@ class BCNNManager(object):
                         fn += 1
                 
             self._net.train()  # Set the model to training phase
-        p = tp / (tp + fp)
-        r = tp / (tp + fn)
+        try:
+            p = tp / (tp + fp)
+        except ZeroDivisionError as error:
+            p =0
+        try:
+            r = tp / (tp + fn)
+        except ZeroDivisionError as error:
+            r =0
         F1 = 2 * r * p / (r + p)
         print('F1: ', str(F1))
         return 100 * num_correct / num_total
