@@ -234,6 +234,10 @@ class BCNNManager(object):
             self._net.eval()
             num_correct = 0
             num_total = 0
+            TP = 0
+            TN = 0
+            FP = 0
+            FN = 0
             for instances, labels in data_loader:
                 # Data.
                 instances = instances.cuda()
@@ -246,10 +250,23 @@ class BCNNManager(object):
                 prediction = torch.argmax(score, dim=1)
                 num_total += labels.size(0)
                 num_correct += torch.sum(prediction == labels).item()
+                
+                if prediction == labels:
+                    if prediction == 1:
+                        TP += 1
+                    elif prediction == 0:
+                        TN += 1
+                elif prediction != labels:
+                    if prediction == 1:
+                        FP += 1
+                    elif prediction == 0:
+                        FN += 1
+                
             self._net.train()  # Set the model to training phase
-        print(str(num_correct), str(num_total))
-        fcscore = f1_score(num_correct, num_total, average='binary')
-        print('F1: ' + str(fcscore))
+        p = TP / (TP + FP)
+        r = TP / (TP + FN)
+        F1 = 2 * r * p / (r + p)
+        print('F1: ', str(F1))
         return 100 * num_correct / num_total
 
 def read_txt(txt_path):
