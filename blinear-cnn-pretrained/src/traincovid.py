@@ -234,10 +234,10 @@ class BCNNManager(object):
             self._net.eval()
             num_correct = 0
             num_total = 0
-            TP = 0
-            TN = 0
-            FP = 0
-            FN = 0
+            tp = 0
+            tn = 0
+            fp = 0
+            fn = 0
             for instances, labels in data_loader:
                 # Data.
                 instances = instances.cuda()
@@ -251,22 +251,22 @@ class BCNNManager(object):
                 num_total += labels.size(0)
                 num_correct += torch.sum(prediction == labels).item()
                 
-                prediction = int(str(labels)[8:9])
+                prediction = int(str(prediction)[8:9])
                 labels = int(str(labels)[8:9])
                 if prediction == labels:
                     if prediction == 1:
-                        TP += 1
+                        tp += 1
                     elif prediction == 0:
-                        TN += 1
+                        tn += 1
                 elif prediction != labels:
                     if prediction == 1:
-                        FP += 1
+                        fp += 1
                     elif prediction == 0:
-                        FN += 1
+                        fn += 1
                 
             self._net.train()  # Set the model to training phase
-        p = TP / (TP + FP)
-        r = TP / (TP + FN)
+        p = tp / (tp + fp)
+        r = tp / (tp + fn)
         F1 = 2 * r * p / (r + p)
         print('F1: ', str(F1))
         return 100 * num_correct / num_total
