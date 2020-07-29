@@ -251,6 +251,8 @@ class BCNNManager(object):
                 num_total += labels.size(0)
                 num_correct += torch.sum(prediction == labels).item()
                 
+                prediction = int(str(labels)[8:9])
+                labels = int(str(labels)[8:9])
                 if prediction == labels:
                     if prediction == 1:
                         TP += 1
