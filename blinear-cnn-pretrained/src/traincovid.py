@@ -19,6 +19,8 @@ from PIL import Image
 
 import zipfile
 
+from sklearn.metrics import f1_score
+
 torch.set_default_dtype(torch.float32)
 torch.set_default_tensor_type(torch.FloatTensor)
 torch.manual_seed(0)
@@ -216,6 +218,8 @@ class BCNNManager(object):
             print('%d\t%4.3f\t\t%4.2f%%\t\t%4.2f%%\t\t%4.2f min' %
                   (t + 1, sum(epoch_loss) / len(epoch_loss), train_acc,
                    test_acc, (toc - tic) / 60))
+            fcscore = f1_score(num_correct, num_total, average='binary')
+            print('F1: ' + str(fcscore))
             self._scheduler.step(test_acc)
         print('Best at epoch %d, test accuaray %4.2f' % (best_epoch, best_acc))
 
