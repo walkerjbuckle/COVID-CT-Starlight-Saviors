@@ -273,7 +273,10 @@ class BCNNManager(object):
             r = tp / (tp + fn)
         except ZeroDivisionError as error:
             r =0
-        F1 = 2 * r * p / (r + p)
+        try:
+            F1 = 2 * r * p / (r + p)
+        except ZeroDivisionError as error:
+            F1 =0
         print('F1: ', str(F1))
         return 100 * num_correct / num_total
 
