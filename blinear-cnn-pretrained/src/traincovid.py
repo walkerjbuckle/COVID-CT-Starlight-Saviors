@@ -218,8 +218,6 @@ class BCNNManager(object):
             print('%d\t%4.3f\t\t%4.2f%%\t\t%4.2f%%\t\t%4.2f min' %
                   (t + 1, sum(epoch_loss) / len(epoch_loss), train_acc,
                    test_acc, (toc - tic) / 60))
-            fcscore = f1_score(num_correct, num_total, average='binary')
-            print('F1: ' + str(fcscore))
             self._scheduler.step(test_acc)
         print('Best at epoch %d, test accuaray %4.2f' % (best_epoch, best_acc))
 
@@ -249,6 +247,9 @@ class BCNNManager(object):
                 num_total += labels.size(0)
                 num_correct += torch.sum(prediction == labels).item()
             self._net.train()  # Set the model to training phase
+        print(str(num_correct), str(num_total))
+        fcscore = f1_score(num_correct, num_total, average='binary')
+        print('F1: ' + str(fcscore))
         return 100 * num_correct / num_total
 
 def read_txt(txt_path):
