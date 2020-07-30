@@ -9,7 +9,7 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import ImageFile
 from PIL import Image
-import torch
+from torch import load, device, max
 import Team5CNNv3
 import Team6BCNN
 from os import environ
@@ -60,13 +60,15 @@ class Predict(QWidget):
         self.layout.addWidget(self.label)
         self.setLayout(self.layout)
 
-        # Initialize model defaults
-        self.model = models.densenet169(pretrained=True)
-        self.modelPath = "Self-Trans.pt"
-        self.modelLabel.setText("Current Model: DenseNet169, Self-Trans.pt")
-
-        # Load default model
-        self._loadModel()
+        # Initialize model defaults & load if found
+        if path.exists("Self-Trans.pt"):
+            self.model = models.densenet169(pretrained=True)
+            self.modelPath = "Self-Trans.pt"
+            self.modelLabel.setText("Current Model: DenseNet169, Self-Trans.pt")
+            self._loadModel()
+        else:
+            self.model = False
+            self.modelLabel.setText("Self-Trans.pt not found: Please load a model!")
 
         self.show()
 
@@ -95,18 +97,18 @@ class Predict(QWidget):
         # Finally, let's load and prepare the model
         if modelType == "DenseNet169":
             self.model = models.densenet169(pretrained=True)
-            pt_net = torch.load(self.modelPath, map_location=torch.device('cpu'))
+            pt_net = load(self.modelPath, map_location=device('cpu'))
             self.model.load_state_dict(pt_net)
             self.model.eval()
             self.modelLabel.setText("Current Model: DenseNet169, " + path.basename(self.modelPath))
         elif modelType == "CNNv3":
             self.model = Team5CNNv3.CNN()
-            pt_net = torch.load(self.modelPath, map_location=torch.device('cpu'))
+            pt_net = load(self.modelPath, map_location=device('cpu'))
             self.model.load_state_dict(pt_net)
             self.modelLabel.setText("Current Model: CNNv3, " + path.basename(self.modelPath))
         elif modelType == "BCNN":
             self.model = Team6BCNN.BCNN(num_classes=2, is_all=True)
-            pt_net = torch.load(self.modelPath, map_location=torch.device('cpu'))
+            pt_net = load(self.modelPath, map_location=device('cpu'))
             self.model.load_state_dict(pt_net, strict=False)
             self.modelLabel.setText("Current Model: BCNN, " + path.basename(self.modelPath))
     
@@ -125,6 +127,15 @@ class Predict(QWidget):
         return imageName
 
     def eval(self):
+        # Make sure we even have a model
+        if "bool" in str(type(self.model)):
+            errorDialog = QMessageBox()
+            errorDialog.setIcon(QMessageBox.Critical)
+            errorDialog.setText("No model loaded. Please load a model!")
+            errorDialog.setWindowTitle("Error")
+            errorDialog.exec_()
+            return
+
         # Get path to image
         imagePath = self.openFileDialog()
         if not imagePath:
@@ -143,15 +154,14 @@ class Predict(QWidget):
         if "densenet" in str(type(self.model)):
             pred = int(output.argmax().item())
         elif "CNNv3" in str(type(self.model)):
-            pred = torch.max(output.data, 1)[1][0].item()
+            pred = max(output.data, 1)[1][0].item()
             # Inverse as this model is the only one not backwards
             if pred == 0:
                 pred = 1
             elif pred == 1:
                 pred = 0
         elif "BCNN" in str(type(self.model)):
-            pred = torch.max(output.data, 1)[1][0].item()
-            print(pred)
+            pred = max(output.data, 1)[1][0].item()
 
         if pred == 0:
             self.label.setText("Prediction: COVID-19 positive")
