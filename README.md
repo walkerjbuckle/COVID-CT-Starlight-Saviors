@@ -36,6 +36,8 @@ pip install -r requirements.txt
 pip install torch torchvision
 ```
 
+The PyTorch neural network models can be downloaded from https://www.kaggle.com/stevengriffin/covidctstarlightsaviors .
+
 # Contributors, please install git pre-commit hook
 
 ```
