@@ -135,6 +135,30 @@ class CNNBackup(nn.Module):
         return out
 
 
+#another possible backup
+class CNNBackup2(nn.Module):
+    def __init__(self):
+        super(CNNBackup2, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(32, 64, 3)
+        self.fc1 = nn.Linear(55 * 55 * 64, 1000)
+        self.fc2 = nn.Linear(1000, 500)
+        self.fc3 = nn.Linear(500, 250)
+        self.fc4 = nn.Linear(250, 2)
+
+    # Forward Pass
+    def forward(self, w):
+        w = self.pool(f.relu(self.conv1(w))
+        w = self.pool(f.relu(self.conv2(w))
+
+        w = w.view(-1, 55 * 55 * 64)
+        w = f.relu(self.fc1(w))
+        w = f.relu(self.fc2(w))
+        w = f.relu(self.fc3(w))
+        w = self.fc4(w)
+        return w
+
 #CNN1 = models.resnet18(pretrained=True)
 #num_ftrs = CNN1.fc.in_features
 #CNN1.fc = nn.Linear(num_ftrs, 2)
@@ -144,6 +168,7 @@ CNN1 = CNN()
 CNN1 = CNN1.to(dev)
 
 CNN2 = CNNBackup()
+CNN3 = CNNBackup2()
 print("Model created!")
 
 # optimizer
@@ -208,6 +233,57 @@ def backupTrain():
                       .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
                               (correct / total) * 100))
 
+                
+#for CNN3
+def backupTrain2(trainer):
+    for epoch in range(epochs):
+        for i, (images, labels) in enumerate(trainer):
+            images, labels = images.to(dev), labels.to(dev)
+            # Run the forward pass
+            outputs = CNN3(images)  # use either CCN1 or CNN2
+            loss = criterion(outputs, labels)
+            lossList.append(loss.item())
+
+            # Backprop and perform optimisation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Track the accuracy
+            stepTotal = labels.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            stepCorrect = (predicted == labels).sum().item()
+            accList.append(stepCorrect / stepTotal)
+
+            if (i + 1) % batchSize == 0:
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy this step: {:.2f}%'
+                      .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
+                          (stepCorrect / stepTotal) * 100))
+#for CNN3
+def backupTrain2(trainer):
+    for epoch in range(epochs):
+        for i, (images, labels) in enumerate(trainer):
+            images, labels = images.to(dev), labels.to(dev)
+            # Run the forward pass
+            outputs = CNN3(images)  # use either CCN1 or CNN2
+            loss = criterion(outputs, labels)
+            lossList.append(loss.item())
+
+            # Backprop and perform optimisation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Track the accuracy
+            stepTotal = labels.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            stepCorrect = (predicted == labels).sum().item()
+            accList.append(stepCorrect / stepTotal)
+
+            if (i + 1) % batchSize == 0:
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy this step: {:.2f}%'
+                      .format(epoch + 1, epochs, i + 1, totalStep, loss.item(),
+                          (stepCorrect / stepTotal) * 100))
 
 
 
